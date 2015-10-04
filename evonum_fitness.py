@@ -1,14 +1,13 @@
 import inspect
 import math, random
 from evonum_god import God
-from evonum_module import *
-from evonum_individual import *
+
+def error():
+	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3]
 
 #FitnessInterface is the interface for all the fitness forces that drive evolution. These classes provide a condition (solver input) and desired solver output
 class FitnessInterface(object):
 	def __init__(self, name):
-		error()
-	def __str__(self):
 		error()
 	def getConditions(self): #gets the current condition variable and the desired response
 		error()
@@ -22,36 +21,38 @@ class FitnessInterface(object):
 		error()
 	def getPenalty(self): #returns fitness penalty if no modules are present to deal with this fitness condition
 		error()
+	def getDescription(self): #return string
+		error()
 
 #Concrete Fitness Forces
-# Equation is a fitness force that randomly generates an integer condition N and the desired solver output is the Nth position in the list
-class Equation(FitnessInterface):
-	def __init__(self, name="Unnamed Equation Fitness Force"):
+#Position Fitness force provides one value and expects a specific return value. Fitness can then be calculated as how close the solver came to the expected value. Value provided is the position of the list of expected.
+class SimplePosition(FitnessInterface):
+	def __init__(self, name="Unnamed Simple Fitness Force"):
 		self._name = name
-		self._desires = [0]
-		self._god = God()
+		self._expected = []
+		self._current_expected = 0
+#		self._god = God()
 		self._age = 0
-		self._condition = 0
-		self._desire = 0
-		self._max = len(self._desires)
+		self._current_condition = 0
+		self._max = len(self._expected)
 		self._min = 1
-		self._type = "Equation"
-		self._penalty = -9999
+		self._type = "Simple"
+		self._penalty = -99999999999
 
-	def __str__(self):
-		return "Prime Number Fitness Force Generator. Name: %s Age: %d, Current Condition: %d, Current Desire: %d" % (self._name, self._age, self._condition, self._desire)
+	def getDescription(self):
+		return "%s Fitness. Name: %s Age: %d, Current Condition: %d, Current Desire: %d" % (self._type, self._name, self._age, self._current_condition, self._current_expected)
 
 	def _setConditions(self):
 		random.seed()
-		self._condition = random.randint(self._min,self._max)
-		self._desire = self._desires[self._condition-1]
+		self._current_condition = random.randint(self._min,self._max)
+		self._current_expected = self._expected[self._current_condition-1]
 
 	def beginDay(self):
 		self._age += 1
 		self._setConditions()
 
 	def getConditions(self):
-		return self._condition, self._desire
+		return self._current_condition, self._current_expected
 		
 	def setMax(self, maximum):
 		try:
@@ -68,8 +69,8 @@ class Equation(FitnessInterface):
 	
 	def loadConditions(self, filename):
 		try:
-			self._desires = [ int(x) for x in open(filename).read().split()]
-			self._max = len(self._desires)
+			self._expected = [ int(x) for x in open(filename).read().split()]
+			self._max = len(self._expected)
 		except:
 			print self,"\nFailed to load conditions from",filename
 	
