@@ -1,0 +1,8 @@
+				###Define script simulation###
+
+World: 50, 5, 1      							#Set up world: max_solvers, max_fitness_forces, % chance to survive failed fitness test
+Force: 1, Simple, Position 						#Add fitness force: # of fitness forces of this type to add, type of fitness force (current types supported = Equation or Position)
+Solver: 50 										#Number of solvers to start with
+Refresh Solvers: 10, 10 						#Add random solvers at regular intervals: # of solvers to add, # of days between addition
+Run: 100000 									#Run for specified number of days
+End: 1000, 10 									#Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.

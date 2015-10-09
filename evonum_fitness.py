@@ -27,7 +27,7 @@ class FitnessInterface(object):
 #Concrete Fitness Forces
 #Position Fitness force provides one value and expects a specific return value. Fitness can then be calculated as how close the solver came to the expected value. Value provided is the position of the list of expected.
 class SimplePosition(FitnessInterface):
-	def __init__(self, name="Unnamed Simple Fitness Force"):
+	def __init__(self, name="Unnamed Simple Position Fitness Force"):
 		self._name = name
 		self._expected = []
 		self._current_expected = 0
@@ -43,7 +43,6 @@ class SimplePosition(FitnessInterface):
 		return "%s Fitness. Name: %s Age: %d, Current Condition: %d, Current Desire: %d" % (self._type, self._name, self._age, self._current_condition, self._current_expected)
 
 	def _setConditions(self):
-		random.seed()
 		self._current_condition = random.randint(self._min,self._max)
 		self._current_expected = self._expected[self._current_condition-1]
 
@@ -80,6 +79,58 @@ class SimplePosition(FitnessInterface):
 	def getPenalty(self):
 		return self._penalty
 
+class SimpleEquation(FitnessInterface):
+	def __init__(self, name="Unnamed Simple Equation Fitness Force"):
+		self._name = name
+		self._current_expected = 0
+#		self._god = God()
+		self._age = 0
+		self._current_condition = 0
+		self._max = 30
+		self._min = 1
+		self._type = "Simple"
+		self._penalty = -99999999999
+		
+	def getDescription(self):
+		return "%s Fitness. Name: %s Age: %d, Current Condition: %.2f, Current Desire: %.2f" % (self._type, self._name, self._age, self._current_condition, self._current_expected)
+
+	def _setConditions(self):
+#		self._current_condition = random.randrange(self._min,self._max)
+		self._current_condition = random.random()*self._max + random.random()*self._min
+#		self._current_expected = 5*pow(self._current_condition,2)+50*math.sin(self._current_condition)-90*math.log(self._current_condition,10) #TODO: Remove hard-coded equation
+#		self._current_expected = math.tan(self._current_condition)
+		self._current_expected = self._current_condition + .05*pow(self._current_condition,2)-.0005*pow(self._current_condition,3)
+		#self._current_expected = self._current_condition*self._current_condition + 1
+
+	def beginDay(self):
+		self._age += 1
+		self._setConditions()
+
+	def getConditions(self):
+		return self._current_condition, self._current_expected
+		
+	def setMax(self, maximum):
+		try:
+			self._max = int(maximum)
+		except:
+			print self,"\nUnable to set maximum condition to",maximum
+		#TODO add tests to make sure max is reasonable int
+	def setMin(self, minimum):
+		try:
+			self._min = int(minimum)
+		except:
+			print self,"\nUnable to set minimum condition to",minimum
+		#TODO add tests to make sure min is reasonable int
+	
+	def loadConditions(self, filename="nothing"):
+		pass
+	
+	def getType(self):
+		return self._type
+	
+	def getPenalty(self):
+		return self._penalty
+		
 class OldAge(FitnessInterface):
 	def __init__(self, name="Maturity"):
 		self._name = name
@@ -92,4 +143,57 @@ class OldAge(FitnessInterface):
 	
 	def getConditions(self):
 		return 0, self._ideal_age
+
+class DynamicEquation(FitnessInterface): #Adjusts probability of variable selection to favor variables that solvers have not done well with.
+	def __init__(self, name="Unnamed Dynamic Equation Fitness Force"):
+		self._name = name
+		self._current_expected = 0
+#		self._god = God()
+		self._age = 0
+		self._max = 30
+		self._min = 1
+		self._current_condition = self._min
+		self._type = "Dynamic"
+		self._penalty = -99999999999
+		self._condition_probabilities = [100]*(self._max - self._min)
+		
+	def getDescription(self):
+		return "%s Fitness. Name: %s Age: %d, Current Condition: %.2f, Current Desire: %.2f" % (self._type, self._name, self._age, self._current_condition, self._current_expected)
+
+	def _setConditions(self):
+#		self._current_condition = random.randrange(self._min,self._max)
+		self._current_condition = random.random()*self._max + random.random()*self._min
+#		self._current_expected = 5*pow(self._current_condition,2)+50*math.sin(self._current_condition)-90*math.log(self._current_condition,10) #TODO: Remove hard-coded equation
+#		self._current_expected = math.tan(self._current_condition)
+		self._current_expected = self._current_condition + .05*pow(self._current_condition,2)-.0005*pow(self._current_condition,3)
+		#self._current_expected = self._current_condition*self._current_condition + 1
+
+	def beginDay(self):
+		self._age += 1
+		self._setConditions()
+
+	def getConditions(self):
+		return self._current_condition, self._current_expected
+		
+	def setMax(self, maximum):
+		try:
+			self._max = int(maximum)
+		except:
+			print self,"\nUnable to set maximum condition to",maximum
+		#TODO add tests to make sure max is reasonable int
+	def setMin(self, minimum):
+		try:
+			self._min = int(minimum)
+		except:
+			print self,"\nUnable to set minimum condition to",minimum
+		#TODO add tests to make sure min is reasonable int
+	
+	def loadConditions(self, filename="nothing"):
+		pass
+	
+	def getType(self):
+		return self._type
+	
+	def getPenalty(self):
+		return self._penalty	
 	
