@@ -4,7 +4,7 @@ from evonum_mutations import *
 from evonum_modules import *
 
 def error():
-	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3]
+	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3] #Used for interface
 
 class SolverFactory(object):
 	solver_types = ["Small"]
@@ -48,10 +48,7 @@ class SolverFactory(object):
 	def importSolver(self, solver_dict):
 		solver_dict["_name"] += "|Imported|"
 		new_solver = self.newSolver(solver_dict["_type"], solver_dict["_name"])
-#		try:
 		new_solver.importDict(solver_dict)
-#		except:
-#			print "Unable to import solver; Name = %s, Type = %s" % (solver_dict["_name"], solver_dict["_type"])
 		return new_solver
 			
 class FitnessCalculator(object):
@@ -66,7 +63,7 @@ class FitnessCalculator(object):
 		
 class LinearFitness(FitnessCalculator): #Linear solver adds up all module responses before calculating fitness
 	def calculateUnitFitness(self, force, modules):
-		if force.getType() == "Simple":
+		if force.getType() == "Simple" or force.getType() == "Dynamic":
 			running_total = 0
 			responded = False
 			variable, expected = force.getConditions()
@@ -83,7 +80,7 @@ class LinearFitness(FitnessCalculator): #Linear solver adds up all module respon
 			
 class DynamicFitness(FitnessCalculator): #Randomly selects modules to calculate fitness and adds up responses before calculating fitness
 	def calculateUnitFitness(self, force, modules):
-		if force.getType() == "Simple":
+		if force.getType() == "Simple" or force.getType() == "Dynamic":
 			running_total = 0
 			responded = False
 			variable, expected = force.getConditions()
@@ -138,7 +135,7 @@ class SmallSolver(SolverInterface):
 		self._age = 0
 		self._children = 0
 		self._modules = []
-		self._property_chances = [.1,10,10,10] #Index correlations: 0 = spread, 1 = total_modules, 2 = module_mutation_chance, 3 = property_mutation_chance; These are hard-coded for individual and cannot mutate.
+		self._property_chances = [.1,.5,10,10] #Index correlations: 0 = spread, 1 = total_modules, 2 = module_mutation_chance, 3 = property_mutation_chance; These are hard-coded for individual and cannot mutate.
 		self._unique = True if random.randint(1,2) == 1 else False #Each solver has a 50% chance of being a unique-module solver
 		self._fitness_calculator = LinearFitness()
 
@@ -173,7 +170,7 @@ class SmallSolver(SolverInterface):
 	def hardReset(self, new_name="Unnamed Small Solver"):
 		self.softReset
 		self._modules = {}
-		self._max_modules = 5
+		self._max_modules = 15
 		self._spread = 10
 		self._module_mutation_chance = 50
 		self._property_mutation_chance = 10
@@ -183,7 +180,7 @@ class SmallSolver(SolverInterface):
 		for x in range(0, len(self._modules)):
 			chances.append(random.randint(1,100)) #chances[2-N] = chance to mutate each module for N modules
 		
-		chances.append(random.randint(1,100)) #chances[N+1] = chance to merge two properties of same type (if not _unique)
+		chances.append(random.randint(1,100)) #chances[N+1] = chance to merge two properties of same type
 		
 #		print "Mutation chances:",", ".join(str(x) for x in chances)
 		
@@ -206,7 +203,6 @@ class SmallSolver(SolverInterface):
 				else:
 					self._modules[x].mutate()
 		
-#		if chances[-1] <= self._merge_mutation_chance and not self._unique: #TODO: change back?
 		if chances[-1] <= self._merge_mutation_chance:
 			self.mergeModules()
 		
@@ -223,11 +219,14 @@ class SmallSolver(SolverInterface):
 				item.updateSpread(self._spread)
 		elif selection <= sum(self._property_chances[0:2]): #Mutate total modules
 #			print "%s: Mutating Total Modules" % self._name
-			self._total_modules = int(Mutations.GaussianMutation(self._total_modules, self._spread*self._total_modules/100)+.5)
+#			print "Old: %d" % self._total_modules
+#			self._total_modules = int(Mutations.GaussianMutation(self._total_modules, self._spread*self._total_modules/100)+.5)
+			self._total_modules = int(Mutations.GaussianMutation(self._total_modules, 1)) #hardcode spread to 1 module
 			if self._total_modules > self._max_modules:
 				self._total_modules = self._max_modules
 			elif self._total_modules < 1:
 				self._total_modules = 1
+#			print "New: %d" % self._total_modules
 		elif selection <= sum(self._property_chances[0:3]): #Mutate module mutation chance
 #			print "%s: Mutating Module Mutation Chance" % self._name
 			self._module_mutation_chance = Mutations.GaussianMutation(self._module_mutation_chance, self._spread*self._module_mutation_chance/100)

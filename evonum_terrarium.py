@@ -10,19 +10,24 @@ class Terrarium(object):
 		self._max_forces = 2
 		self._chance_to_survive_prune = 1
 		
-	def addForce(self, force_type, force_subtype):
+	def addForce(self, force_type, force_subtype, conditions = None):
 		if len(self._forces) >= self._max_forces:
 			print "Already at max forces"
 			return
 		elif force_type == "Simple":
 			if force_subtype == "Position":
 				new_force = SimplePosition("PositionForce"+str(len(self._forces)+1))
-				new_force.loadConditions("primes_1000.txt") #TODO: Remove hard-coded instance
+				new_force.loadConditions(conditions)
 			elif force_subtype == "Equation":
 				new_force = SimpleEquation("EquationForce"+str(len(self._forces)+1))
 			else:
 				print "Unknown Simple subtype"
 				return
+		elif force_type == "Dynamic":
+#			if force_subtype == "Position":
+#				new_force = DynamicPosition
+			if force_subtype == "Equation":
+				new_force = DynamicEquation("DynamicEquationForce"+str(len(self._forces)+1))
 		else:
 			print "Unknown force"
 			return
@@ -37,11 +42,9 @@ class Terrarium(object):
 		if total<1:
 			while True:
 				self.beginDay()
-#				self.printSolvers()
 		else:
 			for x in range(0,total):
 				self.beginDay()
-#				self.printSolvers()
 				
 	def beginDay(self):
 		self._current_day += 1
@@ -55,11 +58,11 @@ class Terrarium(object):
 				dead_solvers.append(pos)
 		surviving = [sol for pos,sol in enumerate(self._solvers) if pos not in dead_solvers] #Remove dead solvers
 		self._solvers = surviving
-		self.reproduceSolvers()
-		self.evaluateSolvers()
-		self.getMetrics()
+		self.reproduceSolvers() #Every surviving solver reproduces once at start of day
+		self.evaluateSolvers() #Every solver and new progeny gets evaluated
+		self.getMetrics() #For printing to screen or other logging
 		self.writeDay() #TODO: Will be changed
-		self.pruneSolvers()
+		self.pruneSolvers() #If more solvers than max for environment, assess solvers based on fitness and flag the failures for death.
 	
 	def reproduceSolvers(self):
 		babies = []
@@ -90,7 +93,7 @@ class Terrarium(object):
 		print "%d\t%.2f" % (self._current_day, max_fit)
 		return max_fit, avgfit
 	
-	def writeDay(self): #TODO: This needs to be moved to a different class and not so hard-coded
+	def writeDay(self): #TODO: Move to logging class
 		outfile = open("daily_dump.txt", "w") 
 		max_fit, avgfit = self.getMetrics()
 		outfile.write("Day "+str(self._current_day)+" AvgFit: "+str(avgfit)+" MaxFit: "+str(max_fit)+" Forces:\n")
@@ -122,6 +125,18 @@ class Terrarium(object):
 				luckyday = True if random.randint(1,100) <= self._chance_to_survive_prune else False #Each solver failing the fitness check has a last chance to survive
 				if not luckyday:
 					item[0].Death()
+		for item in self._forces: #TODO: Figure out a way to isolate fitness forces, as it is right now, if you have multiple different fitness forces, this average is calculated across them, etc.
+			if item.getType() == "Dynamic" and self._current_day > 100: #Dynamic fitness forces adjust the chance of each random variable based on past performance of solvers. Give solvers a 100 days to adapt first.
+				avg = item.getAverageFitness()
+				if solver_scores[0][1]>=avg[0]:
+					increase = False
+				else:
+					increase = True
+				avg[0] = (avg[0]*avg[1]+solver_scores[0][1])/(avg[1]+1)
+				avg[1] += 1
+				item.setAverageFitness(avg)
+				condition, temp = item.getConditions()
+				item.updateConditionProbability(condition, increase)
 #			for item in solver_scores:
 #				print item[0].getName()+"\t"+str(item[1])
 					
@@ -131,7 +146,7 @@ class Terrarium(object):
 				print solver.getDescription()
 				print "Fitness score: %.2f" % solver.getFitness()
 
-	def printOldSolvers(self):
+	def printOldSolvers(self): #Print solvers that have survived at least one day.
 		for solver in self._solvers:
 			if solver._age > 0:
 				print solver.getDescription()

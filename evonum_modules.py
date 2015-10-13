@@ -1,23 +1,22 @@
 import inspect
 import math, random
-from evonum_god import God
+#from evonum_god import God
 from evonum_mutations import *
 
 def error():
-	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3]
+	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3] #Used for interface
 
 class ModuleFactory(object):
-#	fitness_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Sine", "Log", "Ln"]
-#	fitness_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"]
-#	fitness_subtypes = ["Sine_1", "Cosine_1", "Sine_2", "Cosine_2", "Sine_3", "Cosine_3", "Sine_4", "Cosine_4", "Sine_5", "Cosine_5"]
-	fitness_subtypes = ["Power_-1", "Power_-2", "Power_-3", "Power_-4", "Power_-5", "Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_-1", "Sine_-2", "Sine_-3", "Sine_-4", "Sine_-5", "Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_-1", "Cosine_-2", "Cosine_-3", "Cosine_-4", "Cosine_-5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
+#	module_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"] #Improve
+#	module_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"]
+	module_subtypes = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
 	max_power = 5
 	min_power = -5
 	@classmethod
 	def generateNewModule(self, module_type, module_subtype):
 		if module_type == "Fitness":
 			if module_subtype == "Random":
-				module_subtype = self.fitness_subtypes[random.randint(1,len(self.fitness_subtypes))-1]
+				module_subtype = self.module_subtypes[random.randint(1,len(self.module_subtypes))-1]
 			if module_subtype.startswith("Power"):
 				new_module = PowerSolution()
 				if module_subtype != "Power":
@@ -37,10 +36,10 @@ class ModuleFactory(object):
 		return new_module
 	
 	@classmethod
-	def generateUniqueModule(self, module_type, present_subtypes):
+	def generateUniqueModule(self, module_type, present_subtypes): #Generate a module not already part of the present subtypes, used for merging and for solvers with unique True
 		if module_type == "Fitness":
 			potential_subtypes = []
-			for item in self.fitness_subtypes:
+			for item in self.module_subtypes:
 				if item not in present_subtypes:
 					potential_subtypes.append(item)
 			try:
@@ -69,7 +68,7 @@ class ModuleFactory(object):
 			return module_a, module_b
 
 	@classmethod
-	def importModule(self, module_dict):
+	def importModule(self, module_dict): #Import predefined module based on its object dictionary.
 		new_module = self.generateNewModule(module_dict["_type"], module_dict["_subtype"])
 		new_module.importDict(module_dict)
 		return new_module
@@ -98,12 +97,12 @@ class FitnessModuleInterface(object):
 	def getValues(self): #returns a dictionary of parameters and their current values that are mutatable.
 		error()
 
-class PowerSolution(FitnessModuleInterface):
+class PowerSolution(FitnessModuleInterface): #Returns N * x^P where N is a mutatable coefficient and P is a power, either randomly selected or assigned. 
 	def __init__(self):
-		self._power = random.randint(-5,5)
+		self._power = random.randint(1,5) #Randomly select starting power
 		self._min_coeff = -100
 		self._max_coeff = 100
-		self._coeff = Mutations.HardMutation(self._min_coeff, self._max_coeff)
+		self._coeff = Mutations.HardMutation(self._min_coeff, self._max_coeff) #Randomly select starting coefficient
 		self._type = "Fitness"
 		self._subtype = "Power_"+str(self._power)
 		self._spread = 0
@@ -111,14 +110,9 @@ class PowerSolution(FitnessModuleInterface):
 	def getResponse(self, variable):
 		return self._coeff * pow(variable, self._power)
 	
-#	def getFitness(self, fitness_power):
-#		variable, desire = fitness_power.getConditions()
-#		response = self.getResponse(variable)
-#		fitness = -abs(response - desire)
-#		return fitness
-	
 	def mutate(self):
 		self._coeff = Mutations.GaussianMutation(self._coeff, self._spread)
+#Works better without enforcing max and min cutoff.
 #		if self._coeff < self._min_coeff:
 #			self._coeff = self._min_coeff
 #		elif self._coeff > self._max_coeff:
@@ -142,7 +136,7 @@ class PowerSolution(FitnessModuleInterface):
 		return self._subtype
 	
 	def updateSpread(self, spread):
-		self._spread = spread
+		self._spread = spread #TODO: Try allowing modules to have their own mutatable spreads.
 	
 	def setValues(self, value_dictionary):
 		try:
@@ -163,13 +157,13 @@ class PowerSolution(FitnessModuleInterface):
 	def importDict(self, identity):
 		self.__dict__.update(identity)
 		
-class SineSolution(FitnessModuleInterface):
+class SineSolution(FitnessModuleInterface): #Returns N * sine^P(x). N is mutatable, P is assigned.
 	def __init__(self):
 		self._min_coeff = -100
 		self._max_coeff = 100
 		self._coeff = Mutations.HardMutation(self._min_coeff, self._max_coeff)
 		self._type = "Fitness"
-		self._pow = random.randint(-5,5) #randomly select power
+		self._pow = random.randint(1,5) #randomly select power
 		self._subtype = "Sine"+"_"+str(self._pow)
 		self._spread = 0
 
@@ -220,13 +214,13 @@ class SineSolution(FitnessModuleInterface):
 	def importDict(self, identity):
 		self.__dict__.update(identity)
 
-class CosineSolution(FitnessModuleInterface):
+class CosineSolution(FitnessModuleInterface): #Returns N * cosine^P(x)
 	def __init__(self):
 		self._min_coeff = -100
 		self._max_coeff = 100
 		self._coeff = Mutations.HardMutation(self._min_coeff, self._max_coeff)
 		self._type = "Fitness"
-		self._pow = random.randint(-5,5) #randomly select power
+		self._pow = random.randint(1,5) #randomly select power
 		self._subtype = "Cosine"+"_"+str(self._pow)
 
 		self._spread = 0
@@ -277,7 +271,7 @@ class CosineSolution(FitnessModuleInterface):
 	def importDict(self, identity):
 		self.__dict__.update(identity)
 
-class LogSolution(FitnessModuleInterface):
+class LogSolution(FitnessModuleInterface): #Returns N * log10(x) #TODO: Try allowing log base to be assigned like powers.
 	def __init__(self):
 		self._min_coeff = -100
 		self._max_coeff = 100
@@ -288,14 +282,11 @@ class LogSolution(FitnessModuleInterface):
 		self._spread = 0
 
 	def getResponse(self, variable):
-		return self._coeff * math.log(variable, self._base)
+		try:
+			return self._coeff * math.log(variable, self._base)
+		except:
+			return 0
 
-#	def getFitness(self, fitness_power):
-#		variable, desire = fitness_power.getConditions()
-#		response = self.getResponse(variable)
-#		fitness = -abs(response - desire)
-#		return fitness
-	
 	def mutate(self):
 		self._coeff = Mutations.GaussianMutation(self._coeff, self._spread)
 #		if self._coeff < self._min_coeff:
@@ -341,7 +332,7 @@ class LogSolution(FitnessModuleInterface):
 	def importDict(self, identity):
 		self.__dict__.update(identity)
 		
-class NaturalLogSolution(FitnessModuleInterface):
+class NaturalLogSolution(FitnessModuleInterface): #Returns N * ln(X)
 	def __init__(self):
 		self._min_coeff = -100
 		self._max_coeff = 100
@@ -351,7 +342,10 @@ class NaturalLogSolution(FitnessModuleInterface):
 		self._spread = 0
 	
 	def getResponse(self, variable):
-		return self._coeff * math.log(variable)
+		try:
+			return self._coeff * math.log(variable)
+		except:
+			return 0
 	
 	def mutate(self):
 		self._coeff = Mutations.GaussianMutation(self._coeff, self._spread)
@@ -391,18 +385,3 @@ class NaturalLogSolution(FitnessModuleInterface):
 
 	def importDict(self, identity):
 		self.__dict__.update(identity)
-			
-class Maturity(ModuleInterface):
-	def __init__(self):
-		self._type = "Internal"
-		self._subtype = "Maturity"
-	
-	def getResponse(self, variable):
-		return variable
-	
-	def getFitness(self, fitness_power):
-		variable, desire = fitness_power.getConditions()
-	
-	def getDescription(self):
-		string = "%s, %s: Response = Difference from ideal age" % (self._type, self._subtype)	
-		return string

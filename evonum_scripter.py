@@ -19,7 +19,10 @@ class SimpleScripter(object):
 			elif line.startswith("Force"):
 				sets = [item.strip() for item in line.split(":")[1].split(",")]
 				for x in range(0,int(sets[0])):
-					self._world.addForce(sets[1], sets[2])
+					try:
+						self._world.addForce(sets[1], sets[2], sets[3])
+					except:
+						self._world.addForce(sets[1], sets[2]) #This is only here because the equation one can't take conditions yet.
 				print "%d fitness forces added to world of type %s and subtype %s" % (int(sets[0]), sets[1], sets[2])
 			elif line.startswith("Solver"):
 				sets = int(line.split(":")[1].strip())
