@@ -1,15 +1,16 @@
+from __future__ import print_function
 import inspect
 import math, random
 #from evonum_god import God
 from evonum_mutations import *
 
 def error():
-	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3] #Used for interface
+	raise NotImplementedError("%s not implemented" % inspect.stack()[1][3]) #Used for interface
 
 class ModuleFactory(object):
-#	module_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"] #Improve
+	module_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"] #TODO: Make dynamic
 #	module_subtypes = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"]
-	module_subtypes = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
+#	module_subtypes = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
 	max_power = 5
 	min_power = -5
 	@classmethod
@@ -61,10 +62,10 @@ class ModuleFactory(object):
 				new_module = self.generateUniqueModule("Fitness",merged_module.getSubtype())
 				return merged_module, new_module
 			else:
-				print "Failed to merge modules of different subtypes."
+				print ("Failed to merge modules of different subtypes.")
 				return module_a, module_b
 		else:
-			print "Failed to merge non-fitness modules with mergeFitnessModules."
+			print ("Failed to merge non-fitness modules with mergeFitnessModules.")
 			return module_a, module_b
 
 	@classmethod

@@ -1,30 +1,35 @@
+from __future__ import print_function
 import random, sys
 from evonum_terrarium import *
 from evonum_solvers import SolverFactory
 from evonum_scripter import *
-import matplotlib.pyplot as plt
-import numpy as np
+#import matplotlib.pyplot as plt
+#import numpy as np
 
 
-x = np.linspace(0,2,100)
-plt.plot(x,x,label='linear')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.legend()
-plt.draw()
-#plt.close()
-plt.clf
-plt.plot(x,x**2,label='ha')
-plt.show()
-
+#Test opens script file and runs it.
 random.seed()
-#try:
-filename = sys.argv[1]
-print filename
+try:
+	filename = sys.argv[1]
+except:
+	sys.exit("Command line: python tests.py scriptfile.txt")
 script = open(filename).readlines()
 runner = SimpleScripter(script)
-#runner.run()
-#plt.ioff()
+runner.run()
+
+
+#x = np.linspace(0,2,100)
+#plt.plot(x,x,label='linear')
+#plt.xlabel('x')
+#plt.ylabel('y')
+#plt.legend()
+#plt.draw()
+#plt.close()
+#plt.clf
+#plt.plot(x,x**2,label='ha')
+#plt.show()
+
+
 
 
 #except:

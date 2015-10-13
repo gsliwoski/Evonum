@@ -1,10 +1,11 @@
+from __future__ import print_function
 import inspect, random, math
 from copy import deepcopy
 from evonum_mutations import *
 from evonum_modules import *
 
 def error():
-	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3] #Used for interface
+	raise NotImplementedError("%s not implemented" % inspect.stack()[1][3]) #Used for interface
 
 class SolverFactory(object):
 	solver_types = ["Small"]
@@ -98,9 +99,6 @@ class DynamicFitness(FitnessCalculator): #Randomly selects modules to calculate 
 			return force.getPenalty()
 
 		
-def error():
-	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3]
-	
 class SolverInterface(object):
 	def mutate(self): #Returns nothing
 		error()
@@ -182,8 +180,6 @@ class SmallSolver(SolverInterface):
 		
 		chances.append(random.randint(1,100)) #chances[N+1] = chance to merge two properties of same type
 		
-#		print "Mutation chances:",", ".join(str(x) for x in chances)
-		
 		# Mutate Solver properties with set chance
 		if chances[0] <= self._property_mutation_chance:
 			self.mutateProperty()
@@ -191,15 +187,15 @@ class SmallSolver(SolverInterface):
 		#Mutate each module with a set chance to mutate
 		for x in range(0, len(self._modules)):
 			if chances[x+1] <= self._module_mutation_chance:
-#				print "%s: Mutating module #%d" % (self._name, (x+1))
+#				print ("%s: Mutating module #%d" % (self._name, (x+1)))
 				if random.randint(1,100) <= self._swap_module_mutation_chance:
-#					print "swapping out",self._modules[x].getSubtype()
+#					print ("swapping out "+self._modules[x].getSubtype())
 					if not self._unique:
 						self._modules[x] = ModuleFactory.generateUniqueModule("Fitness",[self._modules[x].getSubtype()])
 					else:
 						present_subtypes = [y.getSubtype() for y in self._modules]
 						self._modules[x] = ModuleFactory.generateUniqueModule("Fitness",present_subtypes)
-#					print "swapping in",self._modules[x].getSubtype()
+#					print ("swapping in "+self._modules[x].getSubtype())
 				else:
 					self._modules[x].mutate()
 		
@@ -209,7 +205,7 @@ class SmallSolver(SolverInterface):
 	def mutateProperty(self):
 		selection = random.randint(1,100)
 		if selection <= self._property_chances[0]: #Mutate spread
-#			print "%s: Mutating Spread" % self._name
+#			print ("%s: Mutating Spread" % self._name)
 			self._spread = Mutations.GaussianMutation(self._spread, 1 if self._spread==0 else self._spread) #Make sure that there is always a chance for some degree of mutation
 			if self._spread < 0: 
 				self_spread = 0
@@ -218,24 +214,24 @@ class SmallSolver(SolverInterface):
 			for item in self._modules:
 				item.updateSpread(self._spread)
 		elif selection <= sum(self._property_chances[0:2]): #Mutate total modules
-#			print "%s: Mutating Total Modules" % self._name
-#			print "Old: %d" % self._total_modules
+#			print ("%s: Mutating Total Modules" % self._name)
+#			print ("Old: %d" % self._total_modules)
 #			self._total_modules = int(Mutations.GaussianMutation(self._total_modules, self._spread*self._total_modules/100)+.5)
 			self._total_modules = int(Mutations.GaussianMutation(self._total_modules, 1)) #hardcode spread to 1 module
 			if self._total_modules > self._max_modules:
 				self._total_modules = self._max_modules
 			elif self._total_modules < 1:
 				self._total_modules = 1
-#			print "New: %d" % self._total_modules
+#			print ("New: %d" % self._total_modules)
 		elif selection <= sum(self._property_chances[0:3]): #Mutate module mutation chance
-#			print "%s: Mutating Module Mutation Chance" % self._name
+#			print ("%s: Mutating Module Mutation Chance" % self._name)
 			self._module_mutation_chance = Mutations.GaussianMutation(self._module_mutation_chance, self._spread*self._module_mutation_chance/100)
 			if self._module_mutation_chance > 100: 
 				self._module_mutation_chance = 100
 			elif self._module_mutation_chance < 0:
 				self._module_mutation_chance = 0
 		elif selection <= sum(self._property_chances): #Mutate property mutation chance
-#			print "%s: Mutating Property Mutation Chance" % self._name
+#			print ("%s: Mutating Property Mutation Chance" % self._name)
 			self._property_mutation_chance = Mutations.GaussianMutation(self._property_mutation_chance, self._spread*self._property_mutation_chance/100)
 			if self._property_mutation_chance > 100:
 				self._property_mutation_chance = 100
@@ -252,7 +248,7 @@ class SmallSolver(SolverInterface):
 			
 			#Check if there are too many or too few modules (Can occure after total_modules has been mutated or when no-parent solver is born)
 			if len(self._modules) < self._total_modules:
-#				print "Adding modules, Current: %d, Total: %d" % (len(self._modules), self._total_modules)
+#				print ("Adding modules, Current: %d, Total: %d" % (len(self._modules), self._total_modules))
 				for x in range (0, self._total_modules - len(self._modules)):
 					self.addModule()
 			elif len(self._modules) > self._total_modules:
@@ -328,14 +324,14 @@ class SmallSolver(SolverInterface):
 		module_subtypes = {}
 		for i, item in enumerate(self._modules):
 			if item.getSubtype() in module_subtypes:
-#				print "Merging modules of subtypes:", item.getSubtype()
-#				print "Before merge:"
-#				print self.getDescription()
+#				print ("Merging modules of subtypes:", item.getSubtype())
+#				print ("Before merge:")
+#				print (self.getDescription())
 				new_modules = ModuleFactory.mergeFitnessModules(self._modules[i], self._modules[module_subtypes[item.getSubtype()]])
 				self._modules[module_subtypes[item.getSubtype()]] = new_modules[0]
 				self._modules[i] = new_modules[1]
-#				print "After merge:"
-#				print self.getDescription()
+#				print ("After merge:")
+#				print (self.getDescription())
 				break
 			else:
 				module_subtypes[item.getSubtype()] = i

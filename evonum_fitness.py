@@ -1,9 +1,10 @@
+from __future__ import print_function
 import inspect
 import math, random
 #from evonum_god import God
 
 def error():
-	raise NotImplementedError, "%s not implemented" % inspect.stack()[1][3] #Used for interface
+	raise NotImplementedError("%s not implemented" % inspect.stack()[1][3]) #Used for interface
 
 #FitnessInterface is the interface for all the fitness forces that drive evolution. These classes provide a condition (solver input) and desired solver output
 class FitnessInterface(object):
@@ -57,13 +58,13 @@ class SimplePosition(FitnessInterface):
 		try:
 			self._max = int(maximum)
 		except:
-			print self,"\nUnable to set maximum condition to",maximum
+			print ("\nUnable to set maximum condition to "+ maximum)
 		#TODO add tests to make sure max is reasonable int
 	def setMin(self, minimum):
 		try:
 			self._min = int(minimum)
 		except:
-			print self,"\nUnable to set minimum condition to",minimum
+			print ("\nUnable to set minimum condition to "+minimum)
 		#TODO add tests to make sure min is reasonable int
 	
 	def loadConditions(self, filename):
@@ -90,8 +91,8 @@ class SimpleEquation(FitnessInterface):
 #		self._god = God()
 		self._age = 0
 		self._current_condition = 0
-		self._max = 3.14/2
-		self._min = -3.14/2
+		self._max = math.pi/2
+		self._min = -math.pi/2
 		self._type = "Simple"
 		self._penalty = -99999999999
 		
@@ -115,13 +116,13 @@ class SimpleEquation(FitnessInterface):
 		try:
 			self._max = int(maximum)
 		except:
-			print self,"\nUnable to set maximum condition to",maximum
+			print ("Unable to set maximum condition to "+maximum)
 		#TODO add tests to make sure max is reasonable int
 	def setMin(self, minimum):
 		try:
 			self._min = int(minimum)
 		except:
-			print self,"\nUnable to set minimum condition to",minimum
+			print ("Unable to set minimum condition to "+minimum)
 		#TODO add tests to make sure min is reasonable int
 	
 	def loadConditions(self, filename="nothing"):
@@ -139,8 +140,8 @@ class DynamicEquation(FitnessInterface): #Adjusts probability of variable select
 		self._current_expected = 0
 #		self._god = God()
 		self._age = 0
-		self._max = 10
-		self._min = 1
+		self._max = math.pi/2
+		self._min = -math.pi/2
 		self._current_condition = self._min
 		self._type = "Dynamic"
 		self._penalty = -99999999999
@@ -156,24 +157,24 @@ class DynamicEquation(FitnessInterface): #Adjusts probability of variable select
 		sum_prob = sum(self._condition_probabilities)
 		random_range = random.random()*sum_prob
 		range_selection = 9
-#		print "RandomRange = %.2f" % random_range
+#		print ("RandomRange = %.2f" % random_range)
 		for pos, val in enumerate(self._condition_probabilities):
 			if random_range >= running_range_prob and random_range < running_range_prob + val:
 				range_selection = pos
-				print "Range Selection = %d" % range_selection
+#				print ("Range Selection = %d" % range_selection)
 				break
 			else:
 				running_range_prob += val
 		current_min = self._min + range_selection * self._step_size
 		current_max = current_min + self._step_size
-		print "step size: %.2f, current_min: %.2f, current_max: %.2f" % (self._step_size, current_min, current_max)
+#		print ("step size: %.2f, current_min: %.2f, current_max: %.2f" % (self._step_size, current_min, current_max))
 		self._current_condition = random.random()*(current_max - current_min) + current_min
 #		self._current_condition = random.random()*((self._max - self._min + 1)/len(self._condition_probabilities)) + self._min + range_selection * (self._max - self._min + 1)/len(self._condition_probabilities)
-		print "Current condition = %.2f" % self._current_condition
+#		print ("Current condition = %.2f" % self._current_condition)
 #		self._current_expected = 5*pow(self._current_condition,2)+50*math.sin(self._current_condition)-90*math.log(self._current_condition,10) #TODO: Remove hard-coded equation
-#		self._current_expected = math.tan(self._current_condition)
+		self._current_expected = math.tan(self._current_condition)
 #		self._current_expected = self._current_condition + .05*pow(self._current_condition,2)-.0005*pow(self._current_condition,3)
-		self._current_expected = self._current_condition*self._current_condition + 1
+#		self._current_expected = self._current_condition*self._current_condition + 1
 
 	def beginDay(self):
 		self._age += 1
@@ -186,16 +187,16 @@ class DynamicEquation(FitnessInterface): #Adjusts probability of variable select
 		try:
 			self._max = int(maximum)
 		except:
-			print self,"\nUnable to set maximum condition to",maximum
+			print ("Unable to set maximum condition to "+maximum)
 		#TODO add tests to make sure max is reasonable int
 	def setMin(self, minimum):
 		try:
 			self._min = int(minimum)
 		except:
-			print self,"\nUnable to set minimum condition to",minimum
+			print ("Unable to set minimum condition to "+minimum)
 		#TODO add tests to make sure min is reasonable int
 	
-	def loadConditions(self, filename="nothing"):
+	def loadConditions(self, filename=None):
 		pass
 
 	def getType(self):
@@ -205,7 +206,7 @@ class DynamicEquation(FitnessInterface): #Adjusts probability of variable select
 		return self._penalty
 
 	def updateConditionProbability(self, condition, increase):
-		print "Condition: %.2f Increase? %r" % (condition, increase)
+#		print ("Condition: %.2f Increase? %r" % (condition, increase))
 		pos = int((condition - self._min)/self._step_size)
 		if increase:
 			self._condition_probabilities[pos] += 1
@@ -215,7 +216,7 @@ class DynamicEquation(FitnessInterface): #Adjusts probability of variable select
 			self._condition_probabilities[pos] = 1
 		elif self._condition_probabilities[pos]>1000:
 			self._condition_probabilities[pos] = 1000
-		print self._condition_probabilities
+		print (self._condition_probabilities)
 	
 	def setAverageFitness(self, avg):
 		self._avg_fitness = avg

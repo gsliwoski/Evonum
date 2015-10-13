@@ -15,7 +15,7 @@ class SimpleScripter(object):
 				sets = [item.strip() for item in line.split(":")[1].split(",")]
 				settings = {"_max_solvers": int(sets[0]), "_max_forces": int(sets[1]), "_chance_to_survive_prune": int(sets[2])}
 				self._world.importAttributes(settings)
-				print "New world created."
+				print ("New world created.")
 			elif line.startswith("Force"):
 				sets = [item.strip() for item in line.split(":")[1].split(",")]
 				for x in range(0,int(sets[0])):
@@ -23,20 +23,20 @@ class SimpleScripter(object):
 						self._world.addForce(sets[1], sets[2], sets[3])
 					except:
 						self._world.addForce(sets[1], sets[2]) #This is only here because the equation one can't take conditions yet.
-				print "%d fitness forces added to world of type %s and subtype %s" % (int(sets[0]), sets[1], sets[2])
+				print ("%d fitness forces added to world of type %s and subtype %s" % (int(sets[0]), sets[1], sets[2]))
 			elif line.startswith("Solver"):
 				sets = int(line.split(":")[1].strip())
 				for x in range(0,sets):
 					self._world.addSolver()
-				print "%d solvers added to world." % int(sets)
+				print ("%d solvers added to world." % int(sets))
 			
 			elif line.startswith("Refresh Solvers"):
 				sets = [int(item.strip()) for item in line.split(":")[1].split(",")]
 				self._refresh_rate = sets
 				if self._refresh_rate[0] == 0:
-					print "Solvers will only be added before starting."
+					print ("Solvers will only be added before starting.")
 				else:
-					print "%d fresh solvers will be added every %d days." % (self._refresh_rate[0], self._refresh_rate[1])
+					print ("%d fresh solvers will be added every %d days." % (self._refresh_rate[0], self._refresh_rate[1]))
 			
 			elif line.startswith("Run"):
 				duration = int(line.split(":")[1].strip())
@@ -55,9 +55,9 @@ class SimpleScripter(object):
 #		for item in solvers:
 #			print item
 	def run(self):
-		print "Running Schedule:"
+		print ("Running Schedule:")
 		for item in self._actions:
-			print item
+			print (item)
 		for item in self._actions:
 			if item.startswith("Run"):
 				lifespan = int(item.split("_")[1])
@@ -69,11 +69,11 @@ class SimpleScripter(object):
 					blocks = 1
 					block_size = lifespan
 					remainder = 0
-				print "blocks: %d, block_size: %d, remainder: %d" % (blocks, block_size, remainder)
+				print ("blocks: %d, block_size: %d, remainder: %d" % (blocks, block_size, remainder))
 				for x in range(0,blocks):
 					self._world.runDays(block_size)
 					if self._refresh_rate[1] > 0:
-						print "Adding %d new solvers." % self._refresh_rate[0]
+						print ("Adding %d new solvers." % self._refresh_rate[0])
 						for y in range(0,self._refresh_rate[0]):
 							self._world.addSolver()
 				if remainder>0:

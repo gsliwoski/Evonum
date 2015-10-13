@@ -1,3 +1,4 @@
+from __future__ import print_function
 from evonum_fitness import *
 from evonum_solvers import *
 
@@ -12,7 +13,7 @@ class Terrarium(object):
 		
 	def addForce(self, force_type, force_subtype, conditions = None):
 		if len(self._forces) >= self._max_forces:
-			print "Already at max forces"
+			print ("Already at max forces")
 			return
 		elif force_type == "Simple":
 			if force_subtype == "Position":
@@ -21,7 +22,7 @@ class Terrarium(object):
 			elif force_subtype == "Equation":
 				new_force = SimpleEquation("EquationForce"+str(len(self._forces)+1))
 			else:
-				print "Unknown Simple subtype"
+				print ("Unknown Simple subtype")
 				return
 		elif force_type == "Dynamic":
 #			if force_subtype == "Position":
@@ -29,7 +30,7 @@ class Terrarium(object):
 			if force_subtype == "Equation":
 				new_force = DynamicEquation("DynamicEquationForce"+str(len(self._forces)+1))
 		else:
-			print "Unknown force"
+			print ("Unknown force")
 			return
 		
 		self._forces.append(new_force)
@@ -48,7 +49,7 @@ class Terrarium(object):
 				
 	def beginDay(self):
 		self._current_day += 1
-#		print "-"*20+"Beginning Day "+str(self._current_day)+"-"*20
+#		print ("-"*20+"Beginning Day "+str(self._current_day)+"-"*20)
 		dead_solvers = []
 		for item in self._forces:
 			item.beginDay()
@@ -85,12 +86,12 @@ class Terrarium(object):
 			if min_fit == None or item.getFitness() < min_fit:
 					min_fit = item.getFitness()
 		avgfit = fit/len(self._solvers)
-#		print "="*15+"Daily Metrics"+"="*15
-#		print "Average Fitness: %.2f" % avgfit
-#		print "Maximum Fitness: %.2f" % max_fit
-#		print "Minimum Fitness: %.2f" % min_fit
-#		print "="*30
-		print "%d\t%.2f" % (self._current_day, max_fit)
+#		print ("="*15+"Daily Metrics"+"="*15)
+#		print ("Average Fitness: %.2f" % avgfit)
+#		print ("Maximum Fitness: %.2f" % max_fit)
+#		print ("Minimum Fitness: %.2f" % min_fit)
+#		print ("="*30)
+		print ("%d\t%.2f" % (self._current_day, max_fit))
 		return max_fit, avgfit
 	
 	def writeDay(self): #TODO: Move to logging class
@@ -113,10 +114,10 @@ class Terrarium(object):
 		
 	def pruneSolvers(self): #Prune the population of solvers of those that had the lowest fitness scores
 		if len(self._solvers) < self._max_solvers:
-#			print "No pruning necessary"
+#			print ("No pruning necessary")
 			pass
 		else:
-#			print "Population: %s\tMax Population: %s\tNeed to kill: %s" % (len(self._solvers), self._max_solvers, len(self._solvers)-self._max_solvers)
+#			print ("Population: %s\tMax Population: %s\tNeed to kill: %s" % (len(self._solvers), self._max_solvers, len(self._solvers)-self._max_solvers))
 			solver_scores = [[x] for x in self._solvers]
 			for item in solver_scores:
 				item.append(item[0].getFitness())
@@ -138,30 +139,30 @@ class Terrarium(object):
 				condition, temp = item.getConditions()
 				item.updateConditionProbability(condition, increase)
 #			for item in solver_scores:
-#				print item[0].getName()+"\t"+str(item[1])
+#				print (item[0].getName()+"\t"+str(item[1]))
 					
 	def printLivingSolvers(self):
 		for solver in self._solvers:
 			if solver.isAlive():
-				print solver.getDescription()
-				print "Fitness score: %.2f" % solver.getFitness()
+				print (solver.getDescription())
+				print ("Fitness score: %.2f" % solver.getFitness())
 
 	def printOldSolvers(self): #Print solvers that have survived at least one day.
 		for solver in self._solvers:
 			if solver._age > 0:
-				print solver.getDescription()
-				print "Fitness score: %.2f" % solver.getFitness()
+				print (solver.getDescription())
+				print ("Fitness score: %.2f" % solver.getFitness())
 		
 	def printForces(self):
 		for force in self._forces:
-			print force.getDescription()
+			print (force.getDescription())
 	
 	def importSolver(self, solver):
 		self._solvers.append(solver)
 	
 	def importForce(self, force):
 		if len(self._forces) >= self._max_forces:
-			print "Already at max forces"
+			print ("Already at max forces")
 			return
 		else:
 			self._forces.append(force)
@@ -188,7 +189,7 @@ class Terrarium(object):
 		b = self._max_solvers - m
 		for x in range(1,days+1):
 			self._max_solvers = int(m/x + b+.5)
-#			print "Max solvers:",self._max_solvers
+#			print ("Max solvers:",self._max_solvers)
 			self.runDays(1)
 	
 	def importAttributes(self, attributes):
