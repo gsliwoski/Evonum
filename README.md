@@ -6,6 +6,8 @@ python run_evonum.py testscript.txt
 
 Example runs evolutionary algorithm based on predicting nth prime number given n for 1<=n<=1000
 
+Current top 5 solver details are refreshed in daily_dump.txt
+
 Other examples can be run by changing the forces in the testscript.txt
 
 Force: 1, Simple, Equation - uncomment this line to add a force for predicting tan(x) for -pi/2<=x<=pi/2
