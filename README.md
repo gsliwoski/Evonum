@@ -10,9 +10,9 @@ Current top 5 solver details are refreshed in daily_dump.txt
 
 Other examples can be run by changing the forces in the testscript.txt
 
-Force: 1, Simple, Equation - uncomment this line to add a force for predicting tan(x) for -pi/2<=x<=pi/2
+Force: 1, Simple, Equation, 5.3*pow(x,2)+log(x,e) - uncomment this line to add a force for predicting 5.3*pow(x,2)+log(x,e) for 1<=x<=1000
 
-Force: 1, Dynamic, Equation - uncomment this line to add a force for predicting tan(x) for -pi/2<=x<=pi/2 using dynamic force that adjusts probability of x depending on solver performance.
+Force: 1, Dynamic, Equation, tan(x) - uncomment this line to add a force for predicting tan(x) for -pi/2<=x<=pi/2 using dynamic force that adjusts probability of x depending on solver performance.
 
 Force: 1, Simple, Position, primes_1000.txt - this is the prime number force. 
 
