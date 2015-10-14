@@ -1,6 +1,6 @@
 from __future__ import print_function
 import inspect
-import math
+from math import *
 import random
 #from evonum_god import God
 
@@ -126,10 +126,14 @@ class SimpleEquation(FitnessInterface):
 #		self._god = God()
         self._age = 0
         self._current_condition = 0
-        self._max = math.pi / 2 #TODO: Make dynamic at run-time
-        self._min = -math.pi / 2 #TODO: Make dynamic at run-time
+        self._max = 1000 #TODO: Make dynamic at run-time
+        self._min = 1 #TODO: Make dynamic at run-time
         self._type = "Simple"
         self._penalty = -99999999999
+        # Permitted operations are specified to avoid unsecure behavior of eval.
+        self._operations = ['math', 'cos', 'sin', 'tan', 'log', 'log10', 'pow', 'pi', 'e', 'exp', 'pow', 'sqrt', 'fabs', 'acos', 'asin', 'atan']
+        self._permitted = dict([(item, globals().get(item)) for item in self._operations])
+        self._equation_string = ''
 
     def getDescription(self):
         return "%s Fitness. Name: %s Age: %d, Current Condition: %.2f, Current Desire: %.2f" % (self._type, self._name, self._age, self._current_condition, self._current_expected)
@@ -140,9 +144,14 @@ class SimpleEquation(FitnessInterface):
         self._current_condition = random.random() * (self._max - self._min) + self._min
         #self._current_expected = # 5*pow(self._current_condition,2)+50*math.sin(self._current_condition)-90*math.log(self._current_condition,10)
     	#self._current_expected = self._current_condition + .05*pow(self._current_condition,2)-.0005*pow(self._current_condition,3)
-
-        #TODO: Remove hard-coded equations
-        self._current_expected = math.tan(self._current_condition)
+        #self._current_expected = tan(self._current_condition)
+        self._permitted['x']=self._current_condition
+#        print(self._equation_string)
+#        print(self._permitted)
+        try: 
+            self._current_expected = eval(self._equation_string,{"__builtins__":None}, self._permitted)
+        except ValueError:
+            raise ValueError("Equation is undefined for some value(s) within range. Value attempted: %.2f" % self._current_condition)
 
     def beginDay(self):
         self._age += 1
@@ -165,9 +174,8 @@ class SimpleEquation(FitnessInterface):
             print ("Unable to set minimum condition to " + minimum)
         # TODO add tests to make sure min is reasonable int
 
-    #TODO: Add equation importer
-    def loadConditions(self, filename="nothing"):
-        pass
+    def loadConditions(self, equation): #TODO: Add ability to make sure that equation is solvable for all values between min and max
+        self._equation_string = equation.strip()
 
     def getType(self):
         return self._type
@@ -186,12 +194,15 @@ class DynamicEquation(FitnessInterface):
         self._current_expected = 0
 #		self._god = God()
         self._age = 0
-        self._max = math.pi / 2
-        self._min = -math.pi / 2
+        self._max = pi/2
+        self._min = -pi/2
         self._current_condition = self._min
         self._type = "Dynamic"
         self._penalty = -99999999999
-        
+        # Permitted operations are specified to avoid unsecure behavior of eval.
+        self._operations = ['math', 'cos', 'sin', 'tan', 'log', 'log10', 'pow', 'pi', 'e', 'exp', 'pow', 'sqrt', 'fabs', 'acos', 'asin', 'atan']
+        self._permitted = dict([(item, globals().get(item)) for item in self._operations])
+        self._equation_string = ''
         # Initialize vector of 10 equal probabilities.
         self._condition_probabilities = [100] * 10
         
@@ -210,7 +221,7 @@ class DynamicEquation(FitnessInterface):
         random_range = random.random() * sum_prob
         range_selection = 9
 #		print ("RandomRange = %.2f" % random_range)
-        
+      
         # Randomly select a section of potential variables based on all sections' probability of being selected.
         for pos, val in enumerate(self._condition_probabilities):
             if random_range >= running_range_prob and random_range < running_range_prob + val:
@@ -223,15 +234,13 @@ class DynamicEquation(FitnessInterface):
         current_min = self._min + range_selection * self._step_size
         current_max = current_min + self._step_size
         self._current_condition = random.random() * (current_max - current_min) + current_min
+        self._permitted['x']=self._current_condition
+        try: 
+            self._current_expected = eval(self._equation_string,{"__builtins__":None}, self._permitted)
+        except ValueError:
+            raise ValueError("Equation is undefined for some value(s) within range. Value attempted: %.2f" % self._current_condition)
+        
 #		print ("step size: %.2f, current_min: %.2f, current_max: %.2f" % (self._step_size, current_min, current_max))
-#		self._current_condition = random.random()*((self._max - self._min + 1)/len(self._condition_probabilities)) + self._min + range_selection * (self._max - self._min + 1)/len(self._condition_probabilities)
-#		print ("Current condition = %.2f" % self._current_condition)
-# self._current_expected =
-# 5*pow(self._current_condition,2)+50*math.sin(self._current_condition)-90*math.log(self._current_condition,10)
-# #TODO: Remove hard-coded equation
-        self._current_expected = math.tan(self._current_condition)
-#		self._current_expected = self._current_condition + .05*pow(self._current_condition,2)-.0005*pow(self._current_condition,3)
-#		self._current_expected = self._current_condition*self._current_condition + 1
 
     def beginDay(self):
         self._age += 1
@@ -254,8 +263,8 @@ class DynamicEquation(FitnessInterface):
             print ("Unable to set minimum condition to " + minimum)
         # TODO add tests to make sure min is reasonable int
 
-    def loadConditions(self, filename=None):
-        pass
+    def loadConditions(self, equation):
+        self._equation_string = equation.strip()
 
     def getType(self):
         return self._type

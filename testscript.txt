@@ -1,10 +1,10 @@
 				###Define script simulation###
 
-World: 100, 5, 1      							#Set up world: max_solvers, max_fitness_forces, % chance to survive failed fitness test
-#Force: 1, Simple, Equation 						#Add fitness force: # of fitness forces of this type to add, (current subtypes supported = Simple and Dynamic), subtype (Equation or Position), conditions to load
-#Force: 1, Dynamic, Equation
-Force: 1, Simple, Position, primes_1000.txt
-Solver: 100 										#Number of solvers to start with
-Refresh Solvers: 50, 10 						#Add random solvers at regular intervals: # of solvers to add, # of days between addition
-Run: 50000 									#Run for specified number of days
-End: 1000, 10 									#Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.
+World: 100, 5, 1      							                     # Set up world: max_solvers, max_fitness_forces, % chance to survive failed fitness test
+#Force: 1, Simple, Equation, 5.3*pow(x,2)+log(x,e) 	                 # Add fitness force: # of fitness forces of this type to add, (current subtypes supported = Simple and Dynamic), subtype (Equation or Position), conditions to load
+Force: 1, Dynamic, Equation, x*2                                     # Equation must be in pythonic form, Position condition is a filename with the ordered list of values.
+#Force: 1, Simple, Position, primes_1000.txt
+Solver: 100 										                 #Number of solvers to start with
+Refresh Solvers: 50, 10 						                     #Add random solvers at regular intervals: # of solvers to add, # of days between addition
+Run: 50000 									                         #Run for specified number of days
+End: 1000, 10 									                     #Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.

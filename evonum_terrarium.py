@@ -13,21 +13,20 @@ class Terrarium(object):
         self._max_forces = 2
         self._chance_to_survive_prune = 1
 
-    def addForce(self, force_type, force_subtype, conditions=None):
+    def addForce(self, force_type, force_subtype, conditions):
         if len(self._forces) >= self._max_forces:
             print ("Already at max forces")
-            return
+            return None
         elif force_type == "Simple":
             if force_subtype == "Position":
                 new_force = SimplePosition(
                     "PositionForce" + str(len(self._forces) + 1))
-                new_force.loadConditions(conditions)
             elif force_subtype == "Equation":
                 new_force = SimpleEquation(
                     "EquationForce" + str(len(self._forces) + 1))
             else:
                 print ("Unknown Simple subtype")
-                return
+                return None
         elif force_type == "Dynamic":
 #			if force_subtype == "Position": #TODO: Add dynamic position fitness force
 #				new_force = DynamicPosition
@@ -36,8 +35,8 @@ class Terrarium(object):
                     "DynamicEquationForce" + str(len(self._forces) + 1))
         else:
             print ("Unknown force")
-            return
-
+            return None
+        new_force.loadConditions(conditions)
         self._forces.append(new_force)
 
     def addSolver(self, solver_type="Small"):

@@ -22,12 +22,10 @@ class SimpleScripter(object):
             elif line.startswith("Force"):
                 sets = [item.strip() for item in line.split(":")[1].split(",")]
                 for x in range(0, int(sets[0])):
-                    try:
-                        self._world.addForce(sets[1], sets[2], sets[3])
-                    except:
+                    self._world.addForce(sets[1], sets[2], ','.join(sets[3:]))
                         # This is only here because the equation one can't take
                         # conditions yet.
-                        self._world.addForce(sets[1], sets[2])
+#                        self._world.addForce(sets[1], sets[2], join.(",")sets[3:])
                 print ("%d fitness forces added to world of type %s and subtype %s" % (
                     int(sets[0]), sets[1], sets[2]))
             elif line.startswith("Solver"):
@@ -76,8 +74,7 @@ class SimpleScripter(object):
                     blocks = 1
                     block_size = lifespan
                     remainder = 0
-#                print ("blocks: %d, block_size: %d, remainder: %d" %
-                       (blocks, block_size, remainder))
+#                print ("blocks: %d, block_size: %d, remainder: %d" % (blocks, block_size, remainder))
                 for x in range(0, blocks):
                     self._world.runDays(block_size)
                     if self._refresh_rate[1] > 0:
