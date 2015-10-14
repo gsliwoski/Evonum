@@ -76,8 +76,7 @@ class SimpleScripter(object):
                     blocks = 1
                     block_size = lifespan
                     remainder = 0
-#                print ("blocks: %d, block_size: %d, remainder: %d" %
-                       (blocks, block_size, remainder))
+#                print ("blocks: %d, block_size: %d, remainder: %d" % (blocks, block_size, remainder))
                 for x in range(0, blocks):
                     self._world.runDays(block_size)
                     if self._refresh_rate[1] > 0:
