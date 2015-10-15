@@ -213,6 +213,7 @@ class DynamicEquation(FitnessInterface):
         self._step_size = float(self._max - self._min) / len(self._condition_probabilities)
 
     def getDescription(self):
+        print ("Current condition: %.2f Current expected: %.2f" % (self._current_condition, self._current_expected))
         return "%s Fitness. Name: %s Age: %d, Current Condition: %.2f, Current Desire: %.2f" % (self._type, self._name, self._age, self._current_condition, self._current_expected)
 
     def _setConditions(self):

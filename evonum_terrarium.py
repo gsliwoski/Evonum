@@ -55,7 +55,7 @@ class Terrarium(object):
 
     def beginDay(self):
         self._current_day += 1
-#		print ("-"*20+"Beginning Day "+str(self._current_day)+"-"*20)
+#        print("-"*20+"Beginning Day "+str(self._current_day)+"-"*20)
         dead_solvers = []
         for item in self._forces:
             item.beginDay()
@@ -68,7 +68,8 @@ class Terrarium(object):
         self._solvers = surviving
         self.reproduceSolvers()  # Every surviving solver reproduces once at start of day
         self.evaluateSolvers()  # Every solver and new progeny gets evaluated
-        self.getMetrics()  # For printing to screen or other logging
+        maxfit, avgfit = self.getMetrics()  # For printing to screen or other logging
+        print ("%d\t%.2f" % (self._current_day, maxfit))
         self.writeDay()  # TODO: Will be changed
         # If more solvers than max for environment, assess solvers based on
         # fitness and flag the failures for death.
@@ -100,7 +101,6 @@ class Terrarium(object):
 #		print ("Maximum Fitness: %.2f" % max_fit)
 #		print ("Minimum Fitness: %.2f" % min_fit)
 #		print ("="*30)
-        print ("%d\t%.2f" % (self._current_day, max_fit))
         return max_fit, avgfit
 
     def writeDay(self):  # TODO: Move to logging class

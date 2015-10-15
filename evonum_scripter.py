@@ -61,6 +61,7 @@ class SimpleScripter(object):
     # Run the schedule defined by the scripter after loading forces and solvers into world.
     def run(self):
         print ("Running Schedule:")
+        print(self._actions)
         for item in self._actions:
             print (item)
         for item in self._actions:
