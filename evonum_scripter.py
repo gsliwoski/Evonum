@@ -5,7 +5,7 @@ class SimpleScripter(object):
 
     def __init__(self, script):
         self._actions = []
-        self._world = Terrarium()
+        self._worlds = []
         self._solvers = []
         self._forces = []
         self._refresh_rate = [0, 0]
@@ -14,25 +14,30 @@ class SimpleScripter(object):
             if "#" in line:
                 line = line.split("#")[0]
             if line.startswith("World"):
+                self._worlds.append(Terrarium())
                 sets = [item.strip() for item in line.split(":")[1].split(",")]
                 settings = {"_max_solvers": int(sets[0]), "_max_forces": int(
                     sets[1]), "_chance_to_survive_prune": int(sets[2])}
-                self._world.importAttributes(settings)
+                self._worlds[-1].importAttributes(settings)
+                try:
+                    solver_conditions = {"_total_modules": int(sets[3])}
+                except:
+                    solver_conditions = {}
+                self._worlds[-1].updateSolverConditions(solver_conditions)
                 print ("New world created.")
             elif line.startswith("Force"):
                 sets = [item.strip() for item in line.split(":")[1].split(",")]
                 for x in range(0, int(sets[0])):
-                    self._world.addForce(sets[1], sets[2], ','.join(sets[3:]))
-                        # This is only here because the equation one can't take
-                        # conditions yet.
-#                        self._world.addForce(sets[1], sets[2], join.(",")sets[3:])
+                    self._worlds[-1].addForce(sets[1], sets[2], ','.join(sets[3:]))
+
                 print ("%d fitness forces added to world of type %s and subtype %s" % (
                     int(sets[0]), sets[1], sets[2]))
             elif line.startswith("Solver"):
                 sets = int(line.split(":")[1].strip())
-                for x in range(0, sets):
-                    self._world.addSolver()
-                print ("%d solvers added to world." % int(sets))
+                for pos, item in enumerate(self._worlds):
+                    for x in range(0, sets):
+                        item.addSolver()
+                    print ("%d solvers added to world%d." % (int(sets), pos+1))
 
             elif line.startswith("Refresh Solvers"):
                 sets = [int(item.strip())
@@ -77,22 +82,30 @@ class SimpleScripter(object):
                     remainder = 0
 #                print ("blocks: %d, block_size: %d, remainder: %d" % (blocks, block_size, remainder))
                 for x in range(0, blocks):
-                    self._world.runDays(block_size)
+                    for y in range(0, block_size):
+                        for each_world in self._worlds:
+                            each_world.runDays(1)
                     if self._refresh_rate[1] > 0:
                         print ("Adding %d new solvers." %
                                self._refresh_rate[0])
-                        for y in range(0, self._refresh_rate[0]):
-                            self._world.addSolver()
-                if remainder > 0:
-                    self._world.runDays(remainder)
+                        for each_world in self._worlds:
+                            for adding_solvers in range(0, self._refresh_rate[0]):
+                                each_world.addSolver()
+                for x in range(0,remainder):
+                    for each_world in self._worlds:       
+                        each_world.runDays(1)
 
             elif item.startswith("End"):
-                self._world.endWorld(
-                    int(item.split("_")[1]), int(item.split("_")[2]))
+                for all_worlds in self._worlds: #TODO: fix end of world so worlds can run in parallel
+                    all_worlds.endWorld(
+                        int(item.split("_")[1]), int(item.split("_")[2]))
 
-        self._world.printLivingSolvers()
+        for world in self._worlds:
+            world.printLivingSolvers()
         outfile = open("output", "w")
-        solvers = self._world.exportSolvers()
+        for pos, world in enumerate(self._worlds):
+            solvers = world.exportSolvers()
+            outfile.write("World"+ str(pos+1)+":\n")
         for item in solvers:
             outfile.write(str(item) + "\n")
         outfile.close()
