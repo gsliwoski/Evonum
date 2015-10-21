@@ -8,7 +8,8 @@ Force: 1, Dynamic, Equation, tan(x), -1.570796, 1.570796             # Equation 
 #Force: 1, Simple, Identity, 1,500                                    # Identity force: randomly selects x and expects x. Conditions are min, max for x.
 #Force: 1, Simple, Equation, sin(x)+53.4*pow(cos(x),4)-15*pow(cos(x),2)+log10(x), 1, 1000
 
-Solver: 100 										                 #Number of solvers to start with
-Refresh Solvers: 50, 10 						                     #Add random solvers at regular intervals: # of solvers to add, # of days between addition
-Run: 50000 									                         #Run for specified number of days
-End: 1000, 10 									                     #Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.
+Solver: 100 										                 #Number of new solvers to start with
+Import: world1_solvers.json                                          #Import solvers from file in JSON array format.
+#Refresh Solvers: 50, 10 						                     #Add random solvers at regular intervals: # of solvers to add, # of days between addition
+Run: 100 									                         #Run for specified number of days
+#End: 1000, 10 									                     #Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.

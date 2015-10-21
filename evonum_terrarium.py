@@ -1,7 +1,11 @@
 from __future__ import print_function
 from evonum_fitness import *
 from evonum_solvers import *
+import json
 
+def json_out(o):
+#    print(o.exportDict())
+    return o.exportDict()
 
 class Terrarium(object):
 
@@ -175,25 +179,16 @@ class Terrarium(object):
 #			for item in solver_scores:
 #				print (item[0].name+"\t"+str(item[1]))
 
-    def printLivingSolvers(self):
-        for solver in self._solvers:
-            if solver.living:
-                print (solver.getDescription())
-                print ("Fitness score: %.2f" % solver.fitness)
-
     # Print solvers that have survived at least one day.
-    def printOldSolvers(self):
+    def printSolvers(self):
         for solver in self._solvers:
-            if solver.age > 0:
+            if solver.age > 0 and solver.living:
                 print (solver.getDescription())
                 print ("Fitness score: %.2f" % solver.fitness)
 
     def printForces(self):
         for force in self._forces:
             print (force.getDescription())
-
-    def importSolver(self, solver):
-        self._solvers.append(solver)
 
     def importForce(self, force):
         if len(self._forces) >= self._max_forces:
@@ -202,21 +197,18 @@ class Terrarium(object):
         else:
             self._forces.append(force)
 
-    def exportSolvers(self): #TODO: pickle
-        solverdicts = []
+    def exportSolvers(self):
+        """Exports array of all living solvers as json strings"""
+        solver_jsons = []
         for item in self._solvers:
-            solverdicts.append(item.export())
-        return solverdicts
+            if item.age > 0 and item.living:
+                solver_jsons.append(json.dumps(item, default=json_out, indent=2, sort_keys=True))
+        return solver_jsons
 
-    def importSolverDicts(self, solverdicts): #TODO: pickle
-        for item in solverdicts:
+    def importSolvers(self, solvers_json):
+        for item in solvers_json:
+#            new_solver = 
             self._solvers.append(importSolver(item))
-
-    def clearSolvers(self):
-        self._solvers = []
-
-    def clearFitness(self):
-        self._forces = []
 
     def endWorld(self, days, destination):
         """Ramp down max population each day to reach final value in shape 1/x.

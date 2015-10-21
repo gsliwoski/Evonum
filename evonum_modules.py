@@ -1,4 +1,5 @@
 from __future__ import print_function
+import json
 import inspect
 import math
 import random
@@ -9,17 +10,19 @@ def error():
     raise NotImplementedError("%s not implemented" %
                               inspect.stack()[1][3])  # Used for interface
 
+#MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"] #TODO: store potential subtypes elsewhere and make dynamic
+MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2",
+                       "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
+
+#MODULE_SUBTYPES = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
+
 def createModule(module_type, module_subtype):
     """Returns a new module of provided type and subtype.
     
     If provided subtype is "Random" then randomly selects subtype from defined list.
     """
-#    MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2",
-#                       "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
-    MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"] #TODO: store potential subtypes elsewhere and make dynamic
-#	MODULE_SUBTYPES = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
-    max_power = 5
-    min_power = -5
+#    max_power = 5
+#    min_power = -5
 
     if module_type == "Fitness":
         if module_subtype == "Random":
@@ -50,7 +53,6 @@ def createUniqueModule(module_type, present_subtypes):
     """Returns a new module of provided type that is not within the provided list of subtypes.
     
     If provided list of subtypes contain all possible subtypes, new module is of random subtype."""
-    MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"] #TODO: Store potential subtypes elsewhere.
     if module_type == "Fitness":
         potential_subtypes = []
         for item in MODULE_SUBTYPES:
@@ -92,10 +94,10 @@ def mergeFitnessModules(module_a, module_b):
         return module_a, module_b
 
 def importModule(module_dict):
-    """Import serialized module.""" #TODO: Pickle
+    """Create a new module with a predefined property dictionary."""
     new_module = createModule(
         module_dict["_type_"], module_dict["_subtype"])
-    new_module.importDict(module_dict)
+    new_module.importAttributes(module_dict)
     return new_module
 
 
@@ -134,9 +136,15 @@ class FitnessModuleInterface(ModuleInterface):
 
     def mutatable(self):
         error()
-
+    
+    @property
+    def permitted(self):
+        """Properties that are permitted for import/export"""
+        return self._permitted
+    
     @property
     def spread(self):
+        """Used to define Width of gaussian mutation function"""
         return self._spread
     
     @spread.setter
@@ -146,6 +154,24 @@ class FitnessModuleInterface(ModuleInterface):
         elif value < 0:
             value = 0
         self._spread = value
+
+    # Module serialization        
+    def exportDict(self):
+        """Serial export of module."""
+        out_dict = {}
+        for item in self._permitted:
+            out_dict[item] = getattr(self, item)
+            out_dict["_type_"] = self._type_
+            out_dict["_subtype"] = self._subtype
+        return out_dict
+    
+    def importAttributes(self, value_dictionary):
+#        for item in value_dictionary:
+        for item in self._permitted:
+            if item in value_dictionary:
+                setattr(self, item, value_dictionary[item])
+            else:
+                continue
 
 class PowerSolution(FitnessModuleInterface):
     """Exponent-style fitness module.
@@ -177,6 +203,7 @@ class PowerSolution(FitnessModuleInterface):
         self._type_ = "Fitness"
         self._subtype = "Power_" + str(self._power)
         self._spread = 0
+        self._permitted = ["coeff", "spread"]
 
     # Property management
     @property
@@ -208,23 +235,10 @@ class PowerSolution(FitnessModuleInterface):
             self._type_, self._subtype, self._coeff, self._power)
         return string
 
-    def importAttributes(self, value_dictionary):
-        for item in value_dictionary:
-            if item == "coeff":
-                self.coeff = float(value_dictionary[item])
-            else:
-                assert ("Unrecognized property for Power module: %s" % item)
-
     def mutatable(self):
+        """Returns dictionary of all mutatable properties and current values"""
         vals = {"coeff": self.coeff}
         return vals
-
-    def export(self): #TODO: pickle
-        return dict(self.__dict__)
-
-    def importDict(self, identity): #TODO: pickle
-        self.__dict__.update(identity)
-
 
 # Returns N * sine^P(x). N is mutatable, P is assigned.
 class SineSolution(FitnessModuleInterface):
@@ -255,6 +269,7 @@ class SineSolution(FitnessModuleInterface):
             self._pow = int(power)
         self._subtype = "Sine" + "_" + str(self._pow)
         self._spread = 0
+        self._permitted = ["coeff", "spread"]
 
     # Property management
     @property
@@ -289,24 +304,10 @@ class SineSolution(FitnessModuleInterface):
             self._type_, self._subtype, self._coeff, self._pow)
         return string
 
-    def importAttributes(self, value_dictionary):
-        """Specifically set mutatable properties"""
-        for item in value_dictionary:
-            if item == "coeff":
-                self.coeff = float(value_dictionary[item])
-            else:
-                assert ("Unrecognized property for Sine Module: %s" % item)
-
     def mutatable(self):
         """Get dict of mutatable properties"""
         vals = {"coeff": self.coeff}
         return vals
-
-    def export(self): #TODO: pickle
-        return dict(self.__dict__)
-
-    def importDict(self, identity): #TODO: pickle
-        self.__dict__.update(identity)
 
 # Returns N * cosine^P(x)
 class CosineSolution(FitnessModuleInterface):
@@ -337,6 +338,7 @@ class CosineSolution(FitnessModuleInterface):
             self._pow = int(power)
         self._subtype = "Cosine" + "_" + str(self._pow)
         self._spread = 0
+        self._permitted = ["coeff", "spread"]
 
     # Property management
     @property
@@ -363,23 +365,9 @@ class CosineSolution(FitnessModuleInterface):
             self._type_, self._subtype, self._coeff, self._pow)
         return string
 
-    def importAttributes(self, value_dictionary):
-        for item in value_dictionary:
-            if item == "coeff":
-                self.coeff = float(value_dictionary[item])
-            else:
-                assert ("Unrecognized property for Cosine Module: %s" % item)
-
     def mutatable(self):
         vals = {"coeff": self.coeff}
         return vals
-
-    def export(self): #TODO: pickle
-        return dict(self.__dict__)
-
-    def importDict(self, identity): #TODO: pickle
-        self.__dict__.update(identity)
-
 
 # Returns N * log10(x) #TODO: Try allowing log base to be assigned like powers.
 class LogSolution(FitnessModuleInterface):
@@ -403,6 +391,7 @@ class LogSolution(FitnessModuleInterface):
         self._type_ = "Fitness"
         self._subtype = "Log"
         self._spread = 0
+        self._permitted = ["coeff", "spread"]
 
     # Property management
     @property
@@ -432,22 +421,10 @@ class LogSolution(FitnessModuleInterface):
             self._type_, self._subtype, self._coeff, self._base)
         return string
 
-    def importAttributes(self, value_dictionary):
-        for item in value_dictionary:
-            if item == "coeff":
-                self._coeff = float(value_dictionary["coeff"])
-            else:
-                assert("Unrecognized property for log module: %s" % item)
-
     def mutatable(self):
+        """Returns dict of mutatable properties"""
         vals = {"coeff": self._coeff}
         return vals
-
-    def export(self): #TODO: pickle
-        return dict(self.__dict__)
-
-    def importDict(self, identity): #TODO: pickle
-        self.__dict__.update(identity)
 
 # Returns N * ln(X)
 class NaturalLogSolution(FitnessModuleInterface):  
@@ -470,6 +447,7 @@ class NaturalLogSolution(FitnessModuleInterface):
         self._type_ = "Fitness"
         self._subtype = "Ln"
         self._spread = 0
+        self._permitted = ["coeff", "spread"]
 
     # Property management
     @property
@@ -497,22 +475,9 @@ class NaturalLogSolution(FitnessModuleInterface):
     def getDescription(self):
         string = "%s, %s: Response = %.2f * Ln(variable)" % (
             self._type_, self._subtype, self._coeff)
-        return string
-
-    def importAttributes(self, value_dictionary):
-        for item in value_dictionary:
-            if item == "coeff":
-                self._coeff = float(value_dictionary[item])
-            else:
-                assert("Unrecognized property for Ln module: %s" % item)
-                    
+        return string                
 
     def mutatable(self):
+        """Returns dict of mutatable properties."""
         vals = {"coeff": self._coeff}
         return vals
-
-    def export(self): #TODO: pickle
-        return dict(self.__dict__)
-
-    def importDict(self, identity): #TODO: pickle
-        self.__dict__.update(identity)

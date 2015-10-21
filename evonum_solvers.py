@@ -24,11 +24,11 @@ def createSolver(solver_type, name, conditions=None):
         new_solver = None
     return new_solver
 
-def importSolver(solver_dict): #TODO: Pickle
+def importSolver(solver_dict):
     """Import serialized solver"""
     solver_dict["_name"] += "|Imported|"
-    new_solver = createSolver(solver_dict["_type"], solver_dict["_name"])
-    new_solver.importDict(solver_dict)
+    new_solver = createSolver(solver_dict["_type_"], solver_dict["_name"])
+    new_solver.importAttributes(solver_dict)
     return new_solver
 
 
@@ -46,9 +46,12 @@ class FitnessCalculator(object):
         error()
 
 
-# Linear solver adds up all module responses before calculating fitness
 class LinearFitness(FitnessCalculator):
-
+    """Sums all module responses before calculating fitness."""
+    @property
+    def type_(self):
+        return "LinearFitness"
+        
     def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
             running_total = 0
@@ -65,11 +68,12 @@ class LinearFitness(FitnessCalculator):
         else:  # If it has no modules capable of dealing with the recognized force
             return force.penalty
 
-
-# Randomly selects modules to calculate fitness and adds up responses
-# before calculating fitness
 class DynamicFitness(FitnessCalculator):
-
+    """Randomly select modules to calculate fitness and sum responses."""
+    @property
+    def type_(self):
+        return "DynamicFitness"
+        
     def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
             running_total = 0
@@ -93,37 +97,35 @@ class DynamicFitness(FitnessCalculator):
 
 
 class SolverInterface(object):
-
-    # Returns nothing
+    
     def mutate(self):  
         error()
 
-    # Returns clone
     def clone(self):  
         error()
 
-    # Returns progeny of solver type
     def reproduce(self):  
         error()
 
-    # Returns string of important properties
     def getDescription(self):  
         error()
 
-    # Resets only properties that progeny need reset (ex: name, age, children)
     def softReset(self, new_name):  
         error()
 
-    # Returns False if Individual has died and must be removed.
     def beginDay(self):
         error()
 
-    # Returns nothing, accepts a list of fitness forces
     def calculateFitness(self, fitness_forces):
         error()
 
-    # Returns nothing
     def Death(self):  
+        error()
+    
+    def exportDict(self):
+        error()
+    
+    def importAttributes(self, attribute_dictionary):
         error()
 
     # Property management
@@ -134,7 +136,7 @@ class SolverInterface(object):
     @property
     def living(self):
         """False if solver is over age limit or failed fitness test"""
-        return self._living
+        return self._living        
     
     @property
     def age(self):
@@ -149,9 +151,18 @@ class SolverInterface(object):
     def lifespan(self):
         """Max age in days before living = False"""
         return self._lifespan
+    
+    @property
+    def permitted(self):
+        """List of properties that may be imported/exported"""
+        return self._permitted
 
 class SmallSolver(SolverInterface):
-
+    """Small solvers calculate fitness based on collection of modules
+    
+    Reproduction invokes deepcopy clone and 1 round of mutations.
+    Modules may be combined as linear or dynamic."""
+    
     def __init__(self, name="Unnamed Linear Solver", conditions=None):
         # Static properties
         self._type = "Small"
@@ -181,11 +192,10 @@ class SmallSolver(SolverInterface):
         self._module_mutation_chance = 50
         self._property_mutation_chance = 10
         self._swap_module_chance = 15
-        self._merge_mutation_chance = 50
-
+        self._merge_module_chance = 50    
+        self._permitted = ["_lifespan", "_max_modules", "_name", "_age", "_children", "_property_chances", "unique", "fitness_calculator", "spread", "total_modules", "module_mutation_chance", "property_mutation_chance", "swap_module_chance", "merge_module_chance" ]
         if conditions is not None:
             self.importAttributes(conditions)
-    
     #Property management
     @property        
     def spread(self):
@@ -290,7 +300,7 @@ class SmallSolver(SolverInterface):
     def fitness_calculator(self):
         """Method that modules are combined to calculate fitness"""
         return self._fitness_calculator.type_
-    
+            
     @fitness_calculator.setter
     def fitness_calculator(self, value):
         if value == "Linear":
@@ -299,7 +309,7 @@ class SmallSolver(SolverInterface):
             self._fitness_calculator = DynamicFitness()
         else:
             assert("Unrecognized fitness calculator type for solver: %s" % value)        
-            
+                 
     # Reproductive actions
     def clone(self):
         """Return a deepcopy of self"""
@@ -310,8 +320,11 @@ class SmallSolver(SolverInterface):
         """Return a deepcopy of self with fresh name, age, # children and a single mutation. self._children is incremented by 1"""
         clone = self.clone()
         self._children += 1
-        child_name = self._name.split(
-            ".")[0] + "." + str(int(self._name.split(".")[1]) + 1)
+        try:
+            child_name = self._name.split(
+                ".")[0] + "." + str(int(self._name.split(".")[1]) + 1)
+        except:
+            child_name = self._name+"."+str(self._children)       
         clone.softReset(child_name)
         clone.mutate()
         clone._age = 1
@@ -358,7 +371,7 @@ class SmallSolver(SolverInterface):
                 else:
                     self._modules[x].mutate()
 
-        if chances[-1] <= self._merge_mutation_chance:
+        if chances[-1] <= self._merge_module_chance:
             self.mergeModules()
 
     def mutateProperty(self):
@@ -475,41 +488,25 @@ class SmallSolver(SolverInterface):
         desc += "\n" + "-" * 30
         return desc
 
-    def export(self):
-        """Serialize export solver.""" #TODO: Pickle
-        identity = dict(self.__dict__)
-        identity["_modules"] = []
-        identity["_fitness_calculator"] = "Linear"
-        identity["_type"] = "Small"
+    def exportDict(self):
+        """export all solver properties."""
+        out_dict = {}
+        for item in self._permitted:
+            out_dict[item] = getattr(self, item)
+        out_dict["_modules"] = []
+#        out_dict["_fitness_calculator"] = self.fitness_calculator
         for item in self._modules:
-            identity["_modules"].append(item.export())
-        return identity
-
-    def importDict(self, identity):
-        """Serialize import solver""" #TODO: Pickle
-        self.__dict__.update(identity)
-        imported_modules = []
-        for item in identity["_modules"]:
-            imported_modules.append(importModule(item))
-        self._modules = imported_modules
-        if identity["_fitness_calculator"] == "Linear":
-            self._fitness_calculator = LinearFitness()
+            out_dict["_modules"].append(item.exportDict())
+        out_dict["_type_"] = "Small"
+        return out_dict
 
     def importAttributes(self, attributes):
-        for item in attributes:
-            if item == "spread":
-                self.spread = attributes[item]
-            elif item == "property_mutation_chance":
-                self.property_mutation_chance = attributes[item]
-            elif item == "module_mutation_chance":
-                self.module_mutation_chance = attributes[item]
-            elif item == "total_modules":
-                self.total_modules = attributes[item]
-            elif item == "swap_module_chance":
-                self.swap_module_chance = attributes[item]
-            elif item == "merge_module_chance":
-                self.merge_module_chance = attributes[item]
-            elif item == "unique":
-                self.unique = attributes[item]
-            else:
-                assert("Unrecognized solver attribute: %s" % item)
+        """Import pre-defined properties for solver."""
+        for item in self._permitted:
+            if item in attributes:
+                setattr(self, item, attributes[item])
+        if "_modules" in attributes:
+            imported_modules = []
+            for mod in attributes["_modules"]:
+                imported_modules.append(importModule(mod))
+            self._modules = imported_modules

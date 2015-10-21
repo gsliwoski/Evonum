@@ -1,4 +1,7 @@
 from evonum_terrarium import *
+import json
+
+#def jin(json_obj):
 
 # Takes script from command line and interprets with extremely limited functionality.
 class SimpleScripter(object):
@@ -38,6 +41,13 @@ class SimpleScripter(object):
                     for x in range(0, sets):
                         item.addSolver()
                     print ("%d solvers added to world%d." % (int(sets), pos+1))
+            
+            elif line.startswith("Import"):
+                filename = line.split(":")[1].strip()
+                solver_json=open(filename)
+                solvers = json.load(solver_json)
+                for world in self._worlds:
+                    world.importSolvers(solvers)
 
             elif line.startswith("Refresh Solvers"):
                 sets = [int(item.strip())
@@ -100,15 +110,18 @@ class SimpleScripter(object):
                     all_worlds.endWorld(
                         int(item.split("_")[1]), int(item.split("_")[2]))
 
-        for world in self._worlds:
-            world.printLivingSolvers()
-        outfile = open("output", "w")
         for pos, world in enumerate(self._worlds):
+            world.printSolvers()
             solvers = world.exportSolvers()
-            outfile.write("World"+ str(pos+1)+":\n")
-        for item in solvers:
-            outfile.write(str(item) + "\n")
-        outfile.close()
+            if len(solvers)>0:
+                outfile = open("world"+str(pos+1)+"_solvers.json", "w")
+                outfile.write("[\n")
+                for item in solvers[:-1]:
+                    outfile.write(item+",\n")
+                outfile.write(solvers[-1]+"\n]\n")
+                outfile.close()
+            else:
+                print("No solvers to export from world%d" % pos+1)
 
 # Eventually will be the comprehensive script interpreter, still needs a lot of work.
 class Scripter(object):  # TODO: Far from finished
