@@ -14,46 +14,32 @@ class Terrarium(object):
         self._forces = []
         self._solvers = []
         self._max_solvers = 100
-        self._max_forces = 2
+        self._max_forces = 5
         self._chance_to_survive_prune = 1
         self._solver_conditions = {}
+        self._max_withheld = 100
 
     def addForce(self, force_type, force_subtype, conditions):
         """Add new fitness force to terrarium with provided type, subtype, and conditions."""
         if len(self._forces) >= self._max_forces:
-            print ("Already at max forces")
-            return None
-        elif force_type == "Simple":
-            if force_subtype == "Position":
-                new_force = SimplePosition(
-                    "PositionForce" + str(len(self._forces) + 1))
-            elif force_subtype == "Equation":
-                new_force = SimpleEquation(
-                    "EquationForce" + str(len(self._forces) + 1))
-            elif force_subtype == "Identity":
-                new_force = SimpleIdentity(
-                    "IdentityForce" + str(len(self._forces) + 1))
-            else:
-                print ("Unknown Simple subtype")
-                return None
-        elif force_type == "Dynamic":
-#			if force_subtype == "Position": #TODO: Add dynamic position fitness force
-#				new_force = DynamicPosition
-            if force_subtype == "Equation":
-                new_force = DynamicEquation(
-                    "DynamicEquationForce" + str(len(self._forces) + 1))
+            print ("Already at max forces. No force added.")
+            return
         else:
-            print ("Unknown force")
-            return None
-        new_force.loadConditions(conditions)
-        self._forces.append(new_force)
+            new_force = createFitnessForce(force_type, force_subtype, conditions)
+        if new_force:
+            self._forces.append(new_force)            
+        else:
+            print("Error: failed to create force, no force added.")
 
     def addSolver(self, solver_type="Small"):
         """Add a new solver to terrarium of optional type."""
         # TODO: Solver name convention needs major improvements
         name = "Solver" + str(len(self._solvers) + 1) + \
             "_" + str(self._current_day) + ".1"
-        self._solvers.append(createSolver("Small", name, self._solver_conditions))
+        if solver_type == "Small":
+            self._solvers.append(createSolver("Small", name, self._solver_conditions))
+        else:
+            print("Error: unknown solver type %s. No solver added." % solver_type)
 
     def runDays(self, total=0):
         """Run for provided number of days. If nothing provided, run indefinitely."""
@@ -80,18 +66,23 @@ class Terrarium(object):
         self._solvers = surviving
         self.reproduceSolvers()  # Every surviving solver reproduces once at start of day
         self.evaluateSolvers()  # Every solver and new progeny gets evaluated
-        maxfit, avgfit = self.getMetrics()  # For printing to screen or other logging
-        print ("%d\t%.2f" % (self._current_day, maxfit))
-        self.writeDay()  # TODO: Will be changed
+        solver_scores, withheld_solvers = self.scoreSolvers()  # For printing to screen or other logging
+        if len(solver_scores) > 0:
+           print ("%d\t%.2f" % (self._current_day, solver_scores[0][1]))
+        else:
+            print("%d\tAll solvers dead or withheld!" % self._current_day)
+        self.pruneWithheld(withheld_solvers)
+        self.writeDay(solver_scores, withheld_solvers)  # TODO: Will be changed
         # If more solvers than max for environment, assess solvers based on
         # fitness and flag the failures for death.
-        self.pruneSolvers()
+        self.pruneSolvers(solver_scores)
 
     def reproduceSolvers(self):
         """Reproduce all living solvers."""
         babies = []
         for solver in self._solvers:
-            babies.append(solver.reproduce())
+            if solver.fitness is not None:
+                babies.append(solver.reproduce())
         self._solvers += babies
 
     def evaluateSolvers(self):
@@ -99,61 +90,61 @@ class Terrarium(object):
         for solver in self._solvers:
             solver.calculateFitness(self._forces)
 
-    def getMetrics(self):
-        """Get daily metrics such as avg fitness, max fitness, min fitness"""
+    def scoreSolvers(self):
+        """Returns non-withheld living solvers sorted by fitness as a 
+        list with each position [solver object, solver fitness (float), solver age (int)], 
+        withheld solvers unsorted."""
+        solver_scores = []
+        withheld_solvers = []
         fit = 0
-        max_fit = None
-        min_fit = None
-        for item in self._solvers:
-            fit += item.fitness
-            if max_fit == None or item.fitness > max_fit:
-                max_fit = item.fitness
-            if min_fit == None or item.fitness < min_fit:
-                min_fit = item.fitness
-        avgfit = fit / len(self._solvers)
-#		print ("="*15+"Daily Metrics"+"="*15)
-#		print ("Average Fitness: %.2f" % avgfit)
-#		print ("Maximum Fitness: %.2f" % max_fit)
-#		print ("Minimum Fitness: %.2f" % min_fit)
-#		print ("="*30)
-        return max_fit, avgfit
+        for solver in self._solvers:
+            if solver.fitness is None:
+                if len(withheld_solvers) < self._max_withheld:
+                    withheld_solvers.append(solver)
+                else:
+                    continue
+            elif solver.living:
+                solver_scores.append([solver, solver.fitness, solver.age])
+        if len(solver_scores) > 0:
+            solver_scores.sort(key=lambda x: x[1], reverse=True)
+        return solver_scores, withheld_solvers
 
-    def writeDay(self):
+    def writeDay(self, solver_scores, withheld_solvers):
         """Write daily stats and top solvers for current day into daily_dump.txt"""
+        avg = 0
         outfile = open("daily_dump.txt", "w")
-        max_fit, avgfit = self.getMetrics()
-        outfile.write("Day " + str(self._current_day) + " AvgFit: " +
-                      str(avgfit) + " MaxFit: " + str(max_fit) + " Forces:\n")
+        outfile.write("Day " + str(self._current_day))
+        if len(solver_scores) > 0:
+            for item in solver_scores:
+                avg += item[1]
+            avg = avg / len(solver_scores)
+            outfile.write(" AvgFit: " + str(avg) + " MaxFit: " + str(solver_scores[0][1]))
+        else:
+            outfile.write(" All solvers dead or withheld!")                 
+        outfile.write("\nForces:\n")
         for item in self._forces:
             outfile.write(item.getDescription() + "\n")
-        outfile.write("\n" + "=" * 50 + "\n")
-        solver_scores = [[x] for x in self._solvers]
-        for item in solver_scores:
-            item.append(item[0].fitness)
-        for item in solver_scores:
-            item.append(item[0].age)
-        solver_scores.sort(key=lambda x: x[1], reverse=True)
-        outfile.write("Top 5 solvers:\n")
-        for item in solver_scores[:4]:
-            outfile.write(item[0].getDescription())  
-        outfile.write("\nOldest solvers\n")
-        solver_scores.sort(key=lambda x: x[2], reverse=True)
-        for item in solver_scores[:2]:
-            outfile.write(item[0].getDescription())
-        outfile.write("\n")      
+        outfile.write("Total solvers withheld due to math domain failure: %d\n" % len(withheld_solvers))
+        if len(solver_scores) > 0:
+            outfile.write("\n" + "=" * 50 + "\n")
+            outfile.write("Top 5 solvers:\n")
+            for item in solver_scores[:4]:
+                outfile.write(item[0].getDescription())  
+            outfile.write("\nOldest solvers\n")
+            solver_scores.sort(key=lambda x: x[2], reverse=True)
+            for item in solver_scores[:2]:
+               outfile.write(item[0].getDescription())
+            outfile.write("\n")      
         outfile.close()
 
-    def pruneSolvers(self):
+    def pruneSolvers(self, solver_scores):
         """Remove solvers with lowest fitness score."""
-        if len(self._solvers) < self._max_solvers:
+        if len(solver_scores) < self._max_solvers:
 #			print ("No pruning necessary")
             pass
         else:
 #			print ("Population: %s\tMax Population: %s\tNeed to kill: %s" % (len(self._solvers), self._max_solvers, len(self._solvers)-self._max_solvers))
-            solver_scores = [[x] for x in self._solvers]
-            for item in solver_scores:
-                item.append(item[0].fitness)
-            solver_scores.sort(key=lambda x: x[1], reverse=True)
+#            solver_scores = [[x] for x in self._solvers]
             for item in solver_scores[self._max_solvers:]:
                 # Each solver failing the fitness check has a last chance to
                 # survive
@@ -165,7 +156,7 @@ class Terrarium(object):
             # Dynamic fitness forces adjust the chance of each random variable
             # based on past performance of solvers. Give solvers a 100 days to
             # adapt first.
-            if item.type_ == "Dynamic" and self._current_day > 100:
+            if item.type_ == "Dynamic" and self._current_day > 100 and len(solver_scores) > 0:
                 avg = item.avg_fitness
                 if solver_scores[0][1] >= avg[0]:
                     increase = False
@@ -179,23 +170,32 @@ class Terrarium(object):
 #			for item in solver_scores:
 #				print (item[0].name+"\t"+str(item[1]))
 
+    def pruneWithheld(self, withheld_solvers):
+        if len(withheld_solvers) < self._max_withheld:
+            pass         
+        else:
+            for item in withheld_solvers[self._max_withheld:]:
+                item.Death()
+        return None
+    
     # Print solvers that have survived at least one day.
     def printSolvers(self):
+        """Print descriptions of solvers that have survived at least 1 day."""
         for solver in self._solvers:
             if solver.age > 0 and solver.living:
                 print (solver.getDescription())
-                print ("Fitness score: %.2f" % solver.fitness)
 
     def printForces(self):
+        """Print descriptions of all loaded forces."""
         for force in self._forces:
             print (force.getDescription())
 
-    def importForce(self, force):
-        if len(self._forces) >= self._max_forces:
-            print ("Already at max forces")
-            return
-        else:
-            self._forces.append(force)
+#    def importForce(self, force):
+#        if len(self._forces) >= self._max_forces:
+#            print ("Already at max forces")
+#            return
+#        else:
+#            self._forces.append(force)
 
     def exportSolvers(self):
         """Exports array of all living solvers as json strings"""
@@ -206,15 +206,25 @@ class Terrarium(object):
         return solver_jsons
 
     def importSolvers(self, solvers_json):
+        """Imports list of solvers in json string format."""
+        prev = len(self._solvers)
         for item in solvers_json:
-#            new_solver = 
             self._solvers.append(importSolver(item))
+        print("%d solvers imported to world." % (len(self._solvers) - prev))
 
     def endWorld(self, days, destination):
         """Ramp down max population each day to reach final value in shape 1/x.
     
         Takes days, destination where days = number of days to ramp down and destination = target population.
         """
+        try:
+            days = int(days)
+            destination = int(destination)
+        except ValueError:
+            print("Bad # of days or destination population provided. WorldEnd skipped.")
+            return
+        if destination > self._max_solvers:
+            destination = self._max_solvers
         m = (self._max_solvers - destination) * days / (days - 1)
         b = self._max_solvers - m
         for x in range(1, days + 1):
@@ -222,9 +232,9 @@ class Terrarium(object):
 #			print ("Max solvers:",self._max_solvers)
             self.runDays(1)
 
-    def importAttributes(self, attributes):#TODO: remove or improve
+    def importAttributes(self, attributes):#TODO: improve
         for item in attributes:
             setattr(self, item, attributes[item])
     
-    def updateSolverConditions(self, conditions):
+    def updateSolverConditions(self, conditions): #TODO: remove or improve
         self._solver_conditions.update(conditions)   

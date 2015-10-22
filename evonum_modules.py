@@ -13,7 +13,7 @@ def error():
 #MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"] #TODO: store potential subtypes elsewhere and make dynamic
 MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2",
                        "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
-
+#MODULE_SUBTYPES = ["Log"]
 #MODULE_SUBTYPES = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
 
 def createModule(module_type, module_subtype):
@@ -60,15 +60,14 @@ def createUniqueModule(module_type, present_subtypes):
                 potential_subtypes.append(item)
         try:
             sel = random.choice(potential_subtypes)
-        except:
+        except IndexError:
             sel = "Random"
         return createModule(module_type, sel)
 
-    # Merge modules and return a new module of a subtype different from the
-    # two merged. If unable to merge modules, returns them unchanged.
 def mergeFitnessModules(module_a, module_b):
     """Merge two fitness modules of the same subtype.
     
+    Takes two modules.
     Returns two modules: merged result and new module of different subtype.
     If merge fails, then returns both modules unchanged."""
     
@@ -94,10 +93,19 @@ def mergeFitnessModules(module_a, module_b):
         return module_a, module_b
 
 def importModule(module_dict):
-    """Create a new module with a predefined property dictionary."""
+    """Create a new module with a predefined property dictionary.
+    
+    Takes dictionary and returns module."""
+    if "_type_" not in module_dict or "_subtype" not in module_dict:
+        print("Error: module type/subtype must be provided for import, no module imported.")
+        return None
     new_module = createModule(
         module_dict["_type_"], module_dict["_subtype"])
-    new_module.importAttributes(module_dict)
+    if new_module:
+        new_module.importAttributes(module_dict)
+    else:
+        print("Error: unable to import module of type: %s and subtype %s" % (module_dict["_type_"], module_dict["_subtype"]))
+        return None
     return new_module
 
 
@@ -128,9 +136,25 @@ class FitnessModuleInterface(ModuleInterface):
     def mutate(self):
         error()
     
-    def getResponse(self, fitness_power):
+    def getResponse(self, variable):
+        """Get module response to fitness power variable.
+        
+        If module response is undefined for fitness power variable,
+        due to math domain/zero division error, return None.
+        """
+        try:
+            variable = float(variable)
+        except ValueError:
+            raise TypeError("Error: variable sent fitness module is of bad type %s, must be convertable to float." % type(variable))
+        try:
+            response = self.calculator(variable)
+        except (ValueError, ZeroDivisionError):
+            response = None
+        return response
+    
+    def calculator(self, variable):
         error()
-
+    
     def importAttributes(self, value_dictionary):
         error()
 
@@ -144,11 +168,15 @@ class FitnessModuleInterface(ModuleInterface):
     
     @property
     def spread(self):
-        """Used to define Width of gaussian mutation function"""
+        """Used to define width of gaussian mutation function"""
         return self._spread
     
     @spread.setter
     def spread(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            return
         if value > 1000:
             value = 1000
         elif value < 0:
@@ -193,6 +221,11 @@ class PowerSolution(FitnessModuleInterface):
         if power is None:
             self._power = random.randint(1, 5)  
         else:
+            try:
+                power = int(power)
+            except ValueError:
+                print("Error: Bad power type %s sent to Power Module, using random power" % type(power))
+                power = random.randint(1, 5)
             self._power = int(power)
         # Set boundaries of what coefficient can be initialized at.
         self._min_coeff = -100
@@ -202,7 +235,7 @@ class PowerSolution(FitnessModuleInterface):
         self._coeff = Mutations.HardMutation(self._min_coeff, self._max_coeff)
         self._type_ = "Fitness"
         self._subtype = "Power_" + str(self._power)
-        self._spread = 0
+        self._spread = 10
         self._permitted = ["coeff", "spread"]
 
     # Property management
@@ -213,6 +246,11 @@ class PowerSolution(FitnessModuleInterface):
     
     @coeff.setter
     def coeff(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            print("Error: Bad coeff value type %s sent to power module, returning unchanged." % type(value))
+            return
         if value > 100000:
             value = 100000
         elif value < -100000:
@@ -220,10 +258,10 @@ class PowerSolution(FitnessModuleInterface):
         self._coeff = value
 
     # Module functions        
-    def getResponse(self, variable):
+    def calculator(self, variable):
         """Returns single fitness reponse to single value."""
         return self._coeff * pow(variable, self._power)
-
+            
     def mutate(self):
         """mutate a single mutatable property"""
         self.coeff = Mutations.GaussianMutation(self._coeff, self._spread)
@@ -266,7 +304,12 @@ class SineSolution(FitnessModuleInterface):
         if power is None:
             self._pow = random.randint(1, 5)
         else:
-            self._pow = int(power)
+            try:
+                power = int(power)
+            except ValueError:
+                print("Error: Bad power type %s sent to Sine Module, using random power" % type(power))
+                power = random.randint(1,5)
+            self._pow = power
         self._subtype = "Sine" + "_" + str(self._pow)
         self._spread = 0
         self._permitted = ["coeff", "spread"]
@@ -279,6 +322,11 @@ class SineSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            print("Error: Bad coeff value type %s sent to sine module, returning unchanged." % type(value))
+            return
         if value > 100000:
             value = 100000
         elif value < -100000:
@@ -286,17 +334,13 @@ class SineSolution(FitnessModuleInterface):
         self._coeff = value
     
     # Module functions
-    def getResponse(self, variable):
+    def calculator(self, variable):
         """Returns single fitness reponse to single value."""
         return self._coeff * pow(math.sin(variable), self._pow)
 
     def mutate(self):
         """Mutate a single mutatable property"""
         self.coeff = Mutations.GaussianMutation(self._coeff, self._spread)
-#		if self._coeff < self._min_coeff:
-#			self._coeff = self._min_coeff
-#		elif self._coeff > self._max_coeff:
-#			self._coeff = self._max_coeff
 
     def getDescription(self):
         """Returns string of important properties"""
@@ -335,6 +379,11 @@ class CosineSolution(FitnessModuleInterface):
         if power is None:
             self._pow = random.randint(1, 5)
         else:
+            try:
+                power = int(power)
+            except ValueError:
+                print("Error: Bad power type %s sent to Cosine Module, using random power" % type(power))
+                power = random.randint(1,5)
             self._pow = int(power)
         self._subtype = "Cosine" + "_" + str(self._pow)
         self._spread = 0
@@ -348,13 +397,18 @@ class CosineSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            print("Error: Bad coeff value type %s sent to cosine module, returning unchanged." % type(value))
+            return
         if value > 100000:
             value = 100000
         elif value < -100000:
             value = -100000
         self._coeff = value
     
-    def getResponse(self, variable):
+    def calculator(self, variable):
         return self._coeff * pow(math.cos(variable), self._pow)
 
     def mutate(self):
@@ -401,17 +455,19 @@ class LogSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            print("Error: Bad coeff value type %s sent to log module, returning unchanged." % type(value))
+            return
         if value > 100000:
             value = 100000
         elif value < -100000:
             value = -100000
         self._coeff = value
 
-    def getResponse(self, variable):
-        try:
-            return self._coeff * math.log(variable, self._base)
-        except:
-            return 0 #TODO: Exception handler
+    def calculator(self, variable):
+        return self._coeff * math.log(variable, self._base)
 
     def mutate(self):
         self.coeff = Mutations.GaussianMutation(self._coeff, self._spread)
@@ -457,17 +513,19 @@ class NaturalLogSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            print("Error: Bad coeff value type %s sent to ln module, returning unchanged." % type(value))
+            return
         if value > 100000:
             value = 100000
         elif value < -100000:
             value = -100000
         self._coeff = value
         
-    def getResponse(self, variable):
-        try:
-            return self._coeff * math.log(variable) #TODO: exception handler
-        except:
-            return 0
+    def calculator(self, variable):
+        return self._coeff * math.log(variable)
 
     def mutate(self):
         self.coeff = Mutations.GaussianMutation(self._coeff, self._spread)

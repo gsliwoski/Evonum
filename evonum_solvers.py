@@ -10,6 +10,10 @@ from evonum_modules import *
 def error():
     raise NotImplementedError("%s not implemented" %
                               inspect.stack()[1][3])  # Used for interface
+                              
+def badAttribute(attribute, bad_type, solver_name):
+    """Error message when attempting to assign new value of bad type to a solver property."""
+    print("Error: Bad %s type %s sent to solver %s, returning unchanged." % (attribute, bad_type, solver_name))
 
 def createSolver(solver_type, name, conditions=None):
     """Returns a new solver of supplied type and supplied name
@@ -20,25 +24,43 @@ def createSolver(solver_type, name, conditions=None):
     if solver_type == "Small":
         new_solver = SmallSolver(name, conditions)
     else:
-        assert("Unable to create new solver of type: %s" % solver_type)
+        print("Unknown solver type: %s" % solver_type)
         new_solver = None
     return new_solver
 
 def importSolver(solver_dict):
     """Import serialized solver"""
-    solver_dict["_name"] += "|Imported|"
-    new_solver = createSolver(solver_dict["_type_"], solver_dict["_name"])
-    new_solver.importAttributes(solver_dict)
+    if "_type_" not in solver_dict:
+        print("Error: solver type must be provided for import, no solver imported.")
+        return None
+    solver_dict["_type_"] = str(solver_dict["_type_"])
+    try:
+        solver_dict["name"] = str(solver_dict["name"])
+    except KeyError:
+        solver_dict["name"] = "NoName"
+    new_solver = createSolver(solver_dict["_type_"], solver_dict["name"])
+    if new_solver:
+        new_solver.importAttributes(solver_dict)
     return new_solver
 
-
 class FitnessCalculator(object):
-
     # Overall fitness is the sum of fitness scores for each type of fitness
     def calculateFitness(self, fitness_forces, modules):
+        """Calculate overall solver fitness.
+        
+        Takes list of fitness force objects and list of module objects.
+        Returns fitness value.
+        Fitness is a sum of individual fitness force scores.
+        If solver failed to respond to a fitness force due to math domain error,
+        fitness returns None.
+        """
         fitness = 0
         for item in fitness_forces:
-            fitness += self.calculateUnitFitness(item, modules)
+            response = self.calculateUnitFitness(item, modules)
+            if response is None:
+                return None
+            else:
+                fitness += response
         return fitness
 
     # Different depending on what kind of fitness calculator the solver uses
@@ -58,7 +80,11 @@ class LinearFitness(FitnessCalculator):
             responded = False
             variable, expected = force.conditions
             for item in modules:
-                running_total += item.getResponse(variable)
+                response = item.getResponse(variable)
+                if response is None:
+                    return None
+                else:
+                    running_total += response
                 responded = True
         else:  # If it is an unrecognizable fitness force
             return force.penalty
@@ -84,9 +110,12 @@ class DynamicFitness(FitnessCalculator):
             num_modules_used = random.randint(
                 max(1, int(len(modules) / 2)), int(1.5 * len(modules) + .5))
             for x in range(0, num_modules_used):
-                running_total += random.choice(modules).getResponse(variable)
+                response = random.choice(modules).getResponse(variable)
+                if response is None:
+                    return None
+                else:
+                    running_total += response
                 responded = True
-
         else:  # If it is an unrecognizable fitness force
             return force.penalty
 
@@ -156,7 +185,16 @@ class SolverInterface(object):
     def permitted(self):
         """List of properties that may be imported/exported"""
         return self._permitted
-
+    
+    @property
+    def resilience(self):
+        """int times remaining a solver can survive a math domain error without dieing
+        
+        When a solver survives a domain error, it is excluded from 1 pruning and 1 reproduction.
+        Resilience of -1 means solver always survives domain errors.
+        """
+        return self._resilience
+    
 class SmallSolver(SolverInterface):
     """Small solvers calculate fitness based on collection of modules
     
@@ -165,15 +203,16 @@ class SmallSolver(SolverInterface):
     
     def __init__(self, name="Unnamed Linear Solver", conditions=None):
         # Static properties
+        self._name = name
         self._type = "Small"
         self._fitness = 0
         self._lifespan = 100
         self._living = True
         self._max_modules = 15
-        self._name = name
         self._age = 0
         self._children = 0
         self._modules = []
+        self._resilience = 2
 
         # Index correlations: 0 = spread, 1 = total_modules, 
         # 2 = module_mutation_chance, 3 = property_mutation_chance; These are
@@ -181,8 +220,9 @@ class SmallSolver(SolverInterface):
         self._property_chances = [.1, .5, 10, 10]
 
         # Each solver has a 50% chance of being a unique-module solver
-        self._unique = True if random.randint(1, 2) == 1 else False
-        
+#        self._unique = True if random.randint(1, 2) == 1 else False
+        self._unique = False
+               
         # Determines the way modules are connected to calculate response
         self._fitness_calculator = LinearFitness()
 
@@ -193,8 +233,8 @@ class SmallSolver(SolverInterface):
         self._property_mutation_chance = 10
         self._swap_module_chance = 15
         self._merge_module_chance = 50    
-        self._permitted = ["_lifespan", "_max_modules", "_name", "_age", "_children", "_property_chances", "unique", "fitness_calculator", "spread", "total_modules", "module_mutation_chance", "property_mutation_chance", "swap_module_chance", "merge_module_chance" ]
-        if conditions is not None:
+        self._permitted = ["name", "_age", "_children", "unique", "fitness_calculator", "spread", "total_modules", "module_mutation_chance", "property_mutation_chance", "swap_module_chance", "merge_module_chance", "resilience" ]
+        if conditions:
             self.importAttributes(conditions)
     #Property management
     @property        
@@ -204,6 +244,11 @@ class SmallSolver(SolverInterface):
     
     @spread.setter
     def spread(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            badAttribute("coefficient", type(value), self._name)
+            return
         if value < 0:
             value = 0
         elif value > 1000:
@@ -217,6 +262,11 @@ class SmallSolver(SolverInterface):
     
     @total_modules.setter
     def total_modules(self, value):
+        try:
+            value = int(value)
+        except ValueError:
+            badAttribute("total_modules", type(value), self._name)
+            return
         if value > self._max_modules:
             value = self._max_modules
         elif value < 1:
@@ -230,6 +280,11 @@ class SmallSolver(SolverInterface):
     
     @module_mutation_chance.setter
     def module_mutation_chance(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            badAttribute("module_mutation_chance", type(value), self._name)
+            return
         if value > 100:
             value = 100
         elif value < 0:
@@ -243,6 +298,11 @@ class SmallSolver(SolverInterface):
     
     @property_mutation_chance.setter
     def property_mutation_chance(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            badAttribute("property_mutation_chance", type(value), self._name)
+            return
         if value > 100:
             value = 100
         elif value < 0:
@@ -256,6 +316,11 @@ class SmallSolver(SolverInterface):
     
     @swap_module_chance.setter
     def swap_module_chance(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            badAttribute("swap_module_chance", type(value), self._name)
+            return
         if value > 100:
             value = 100
         elif value < 0:
@@ -269,6 +334,11 @@ class SmallSolver(SolverInterface):
 
     @merge_module_chance.setter
     def merge_module_chance(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            badAttribute("merge_module_chance", type(value), self._name)
+            return
         if value > 100:
             value = 100
         elif value < 0:
@@ -291,10 +361,6 @@ class SmallSolver(SolverInterface):
     def living(self):
         """False = flagged for removal at start of next day"""
         return self._living
-    
-    @living.setter
-    def living(self, value):
-        self._living = value
 
     @property
     def fitness_calculator(self):
@@ -308,7 +374,8 @@ class SmallSolver(SolverInterface):
         elif value == "Dynamic":
             self._fitness_calculator = DynamicFitness()
         else:
-            assert("Unrecognized fitness calculator type for solver: %s" % value)        
+            badAttribute("fitness_calculator", value, self._name)
+            return
                  
     # Reproductive actions
     def clone(self):
@@ -318,26 +385,29 @@ class SmallSolver(SolverInterface):
     # Make a clone, reset name, age, and children, and mutate.
     def reproduce(self):
         """Return a deepcopy of self with fresh name, age, # children and a single mutation. self._children is incremented by 1"""
-        clone = self.clone()
-        self._children += 1
-        try:
-            child_name = self._name.split(
-                ".")[0] + "." + str(int(self._name.split(".")[1]) + 1)
-        except:
-            child_name = self._name+"."+str(self._children)       
-        clone.softReset(child_name)
-        clone.mutate()
-        clone._age = 1
-        return clone
+        if self._fitness is not None:
+            clone = self.clone()
+            self._children += 1
+            try:
+                child_name = self._name.split(
+                    ".")[0] + "." + str(int(self._name.split(".")[1]) + 1)
+            except IndexError:
+                child_name = self._name+"."+str(self._children)       
+            clone.softReset(child_name)
+            clone.mutate()
+            clone._age = 1
+            return clone
+        else:
+            return None
 
     def softReset(self, new_name="Unnamed Small Solver"):
-        """Reset name, age, # children, and unique flag"""
-        self._name = new_name
+        """Reset name, age, and # children"""
+        self._name = str(new_name)
         self._children = 0
         self._age = 0
         self._fitness = 0
-        # TODO: Possibly get rid of, testing this:
-        self._unique = True if random.randint(1, 2) == 1 else False
+        # TODO: More testing with unique vs non-unique
+        #self._unique = True if random.randint(1, 2) == 1 else False
 
     def mutate(self):
         """Randomly mutate solver property and/or module."""
@@ -430,7 +500,6 @@ class SmallSolver(SolverInterface):
                 item.spread = self._spread
 
             return True
-
         else:
             return False
 
@@ -443,10 +512,19 @@ class SmallSolver(SolverInterface):
             self._modules.append(createUniqueModule("Fitness", present_subtypes))
 
     def calculateFitness(self, fitness_forces):
-        """Return and store sum fitness score of each fitness_force in provided list"""
+        """store sum fitness score of each fitness_force in provided list.
+        
+        Math domain errors return None and dock a resilient."""
         self._fitness = self._fitness_calculator.calculateFitness(
             fitness_forces, self._modules)
-
+        if self._fitness is None:
+#            print("Solver %s failed the math domain and lost resilience." % self.name)
+            if self._resilience == 0:
+#                print("Solver %s ran out of resilience and is DEAD!" % self.name)
+                self.Death()
+            elif self._resilience > 0:
+                self._resilience -= 1
+        
     def Death(self):
         """Flags solver for death at start of next day"""
         self._living = False
@@ -485,6 +563,10 @@ class SmallSolver(SolverInterface):
             desc += "\nModules:"
             for item in self._modules:
                 desc += "\n%s" % item.getDescription()
+        if self._fitness is None:
+            desc += "\nNo fitness score available, solver currently withheld!"
+        else:
+            desc +="\nFitness score: %.2f" % self._fitness
         desc += "\n" + "-" * 30
         return desc
 
@@ -494,7 +576,6 @@ class SmallSolver(SolverInterface):
         for item in self._permitted:
             out_dict[item] = getattr(self, item)
         out_dict["_modules"] = []
-#        out_dict["_fitness_calculator"] = self.fitness_calculator
         for item in self._modules:
             out_dict["_modules"].append(item.exportDict())
         out_dict["_type_"] = "Small"
@@ -503,8 +584,22 @@ class SmallSolver(SolverInterface):
     def importAttributes(self, attributes):
         """Import pre-defined properties for solver."""
         for item in self._permitted:
+            # Type-check the ~private variables since they have no setter.
             if item in attributes:
+                if item == "_age":
+                    try:
+                        attributes[item] = int(attributes[item])
+                    except ValueError:
+                        attributes[item] = 1
+                elif item == "name":
+                    continue
+                elif item == "_children":
+                    try:
+                        attributes[item] = int(attributes[item])
+                    except ValueError:
+                        attributes[item] = 0
                 setattr(self, item, attributes[item])
+        # Modules require individual import
         if "_modules" in attributes:
             imported_modules = []
             for mod in attributes["_modules"]:
