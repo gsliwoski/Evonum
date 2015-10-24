@@ -134,6 +134,8 @@ class SimplePosition(FitnessInterface):
             self._expected = [float(x) for x in open(filename).read().split()]
         except ValueError:
             raise TypeError("Error: all values in ordered list from file %s must be castable to float!" % filename)
+        except TypeError:
+            raise TypeError("Error: conditions must be string filename for position values")
         self._max_ = len(self._expected)
         if self._max_ == 0:
             raise ValueError("Error: ordered list loaded for Position Force is empty!")
@@ -219,9 +221,11 @@ class SimpleEquation(FitnessInterface):
                 self._current_expected = eval(self._equation_string,{"__builtins__":None}, self._permitted)
             except (ValueError, ZeroDivisionError):
                 continue
+            except NameError:
+                raise NameError("Unrecognizable equation %s" % self._equation_string)
             else:
                 return
-            raise ValueError("Equation force solution is undefined 100 times in a row, check value range. Equation: %s, Max: %.2f, Min: .2f" % (self._equation_string, self._max_, self._min_))
+        raise ValueError("Equation force solution is undefined 100 times in a row, check value range. Equation: %s, Max: %.2f, Min: %.2f" % (self._equation_string, self._max_, self._min_))
 
     def beginDay(self):
         """Increment age by 1 and set day's conditions"""
@@ -235,15 +239,18 @@ class SimpleEquation(FitnessInterface):
         """
         print(conditions)
         """Takes string  of equation, minimum random variable, maximum random variable"""
-        conditions = conditions.split(",")
+        try:
+            conditions = conditions.split(",")
+        except AttributeError:
+            raise TypeError("Error: equation, min, max must be provided for equation fitness force.")
         try:
             self._equation_string = ",".join(conditions[:-2])
         except IndexError:
-            raise IndexError("Error: [equation, min, max] must be provided for equation fitness force.")
+            raise IndexError("Error: equation, min, max must be provided for equation fitness force.")
         try:
             maximum = max(float(conditions[-2]), float(conditions[-1]))
-        except ValueError:
-            print("Error: Bad min and/or max type supplied for equation fitness, leaving at default.")
+        except (ValueError, IndexError):
+            raise TypeError("Error: Bad or missing min and/or max type supplied for equation fitness.")
         else:
             self.max_ = maximum
             self.min_ = min(float(conditions[-2]), float(conditions[-1]))
@@ -381,9 +388,10 @@ class DynamicEquation(FitnessInterface):
         
         Required conditions include equation string in python format, minimum value, maximum value.
         """
-        conditions = conditions.split(",")
-        self._equation_string = ",".join(conditions[:-2])
-#        print (self._min_,self._max_,self._step_size)
+        try:
+            conditions = conditions.split(",")
+        except AttributeError:
+            raise TypeError("Error: [equation, min, max] must be provided for equation fitness force.")
         try:
             self._equation_string = ",".join(conditions[:-2])
         except IndexError:
@@ -391,7 +399,7 @@ class DynamicEquation(FitnessInterface):
         try:
             maximum = max(float(conditions[-2]), float(conditions[-1]))
         except ValueError:
-            print("Error: Bad min and/or max type supplied for equation fitness, leaving at default.")
+            raise TypeError("Error: Bad or missing min and/or max type supplied for equation fitness.")
         else:
             self.max_ = maximum
             self.min_ = min(float(conditions[-2]), float(conditions[-1]))

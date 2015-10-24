@@ -16,14 +16,15 @@ MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log",
 #MODULE_SUBTYPES = ["Log"]
 #MODULE_SUBTYPES = ["Sine_1", "Sine_2", "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
 
-def createModule(module_type, module_subtype):
+def createModule(module_type="Fitness", module_subtype="Random"):
     """Returns a new module of provided type and subtype.
     
     If provided subtype is "Random" then randomly selects subtype from defined list.
     """
 #    max_power = 5
 #    min_power = -5
-
+    module_type = str(module_type)
+    module_subtype = str(module_subtype)
     if module_type == "Fitness":
         if module_subtype == "Random":
             module_subtype = MODULE_SUBTYPES[
@@ -47,6 +48,12 @@ def createModule(module_type, module_subtype):
                 new_module = CosineSolution()
             else:
                 new_module = CosineSolution(int(module_subtype.split("_")[1]))
+        else:
+            print("Error: unrecognized fitness module subtype, unable to create module.")
+            new_module = None
+    else:
+            print("Error: unrecognized module type, unable to create module.")    
+            new_module = None
     return new_module
 
 def createUniqueModule(module_type, present_subtypes):
@@ -56,13 +63,21 @@ def createUniqueModule(module_type, present_subtypes):
     if module_type == "Fitness":
         potential_subtypes = []
         for item in MODULE_SUBTYPES:
-            if item not in present_subtypes:
-                potential_subtypes.append(item)
+            try:
+                if item not in present_subtypes:
+                    potential_subtypes.append(item)
+            except TypeError:
+                print("Error: present_subtypes must be iterable for createUniqueModule")
+                return None
         try:
             sel = random.choice(potential_subtypes)
         except IndexError:
             sel = "Random"
+        print( sel)
         return createModule(module_type, sel)
+    else:
+        print("Error: unknown module type, unable to create unique module!")
+        return None
 
 def mergeFitnessModules(module_a, module_b):
     """Merge two fitness modules of the same subtype.
@@ -96,8 +111,12 @@ def importModule(module_dict):
     """Create a new module with a predefined property dictionary.
     
     Takes dictionary and returns module."""
-    if "_type_" not in module_dict or "_subtype" not in module_dict:
-        print("Error: module type/subtype must be provided for import, no module imported.")
+    try:
+        if "_type_" not in module_dict or "_subtype" not in module_dict:
+            print("Error: module type/subtype must be provided for import, no module imported.")
+            return None
+    except TypeError:
+        print("Error: module dict must be iteratable for importModule! No module created.")
         return None
     new_module = createModule(
         module_dict["_type_"], module_dict["_subtype"])
@@ -107,7 +126,6 @@ def importModule(module_dict):
         print("Error: unable to import module of type: %s and subtype %s" % (module_dict["_type_"], module_dict["_subtype"]))
         return None
     return new_module
-
 
 class ModuleInterface(object):
 
@@ -246,6 +264,9 @@ class PowerSolution(FitnessModuleInterface):
     
     @coeff.setter
     def coeff(self, value):
+        if isinstance(value, bool):
+            print("Error: bad coeff value type bool, returning unchanged.")
+            return
         try:
             value = float(value)
         except ValueError:
@@ -311,7 +332,7 @@ class SineSolution(FitnessModuleInterface):
                 power = random.randint(1,5)
             self._pow = power
         self._subtype = "Sine" + "_" + str(self._pow)
-        self._spread = 0
+        self._spread = 10
         self._permitted = ["coeff", "spread"]
 
     # Property management
@@ -322,6 +343,9 @@ class SineSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        if isinstance(value, bool):
+            print("Error: bad coeff value type bool, returning unchanged.")
+            return
         try:
             value = float(value)
         except ValueError:
@@ -386,7 +410,7 @@ class CosineSolution(FitnessModuleInterface):
                 power = random.randint(1,5)
             self._pow = int(power)
         self._subtype = "Cosine" + "_" + str(self._pow)
-        self._spread = 0
+        self._spread = 10
         self._permitted = ["coeff", "spread"]
 
     # Property management
@@ -397,6 +421,9 @@ class CosineSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        if isinstance(value, bool):
+            print("Error: bad coeff value type bool, returning unchanged.")
+            return
         try:
             value = float(value)
         except ValueError:
@@ -444,7 +471,7 @@ class LogSolution(FitnessModuleInterface):
         self._base = 10
         self._type_ = "Fitness"
         self._subtype = "Log"
-        self._spread = 0
+        self._spread = 10
         self._permitted = ["coeff", "spread"]
 
     # Property management
@@ -455,6 +482,9 @@ class LogSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        if isinstance(value, bool):
+            print("Error: bad coeff value type bool, returning unchanged.")
+            return
         try:
             value = float(value)
         except ValueError:
@@ -502,7 +532,7 @@ class NaturalLogSolution(FitnessModuleInterface):
         self._coeff = Mutations.HardMutation(self._min_coeff, self._max_coeff)
         self._type_ = "Fitness"
         self._subtype = "Ln"
-        self._spread = 0
+        self._spread = 10
         self._permitted = ["coeff", "spread"]
 
     # Property management
@@ -513,6 +543,9 @@ class NaturalLogSolution(FitnessModuleInterface):
 
     @coeff.setter
     def coeff(self, value):
+        if isinstance(value, bool):
+            print("Error: bad coeff value type bool, returning unchanged.")
+            return
         try:
             value = float(value)
         except ValueError:

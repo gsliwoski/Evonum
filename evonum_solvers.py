@@ -15,13 +15,13 @@ def badAttribute(attribute, bad_type, solver_name):
     """Error message when attempting to assign new value of bad type to a solver property."""
     print("Error: Bad %s type %s sent to solver %s, returning unchanged." % (attribute, bad_type, solver_name))
 
-def createSolver(solver_type, name, conditions=None):
+def createSolver(solver_type="Small", name=None, conditions=None):
     """Returns a new solver of supplied type and supplied name
     
     Option third argument is a dictionary of mutatable attributes to import
     """
     
-    if solver_type == "Small":
+    if solver_type == "Small":        
         new_solver = SmallSolver(name, conditions)
     else:
         print("Unknown solver type: %s" % solver_type)
@@ -148,7 +148,7 @@ class SolverInterface(object):
     def calculateFitness(self, fitness_forces):
         error()
 
-    def Death(self):  
+    def death(self):  
         error()
     
     def exportDict(self):
@@ -158,6 +158,10 @@ class SolverInterface(object):
         error()
 
     # Property management
+    @property
+    def type_(self):
+        return self._type_
+        
     @property
     def name(self):
         return self._name
@@ -201,10 +205,12 @@ class SmallSolver(SolverInterface):
     Reproduction invokes deepcopy clone and 1 round of mutations.
     Modules may be combined as linear or dynamic."""
     
-    def __init__(self, name="Unnamed Linear Solver", conditions=None):
+    def __init__(self, name=None, conditions=None):
         # Static properties
+        if name is None:
+            name = "Unnamed Linear Solver"
         self._name = name
-        self._type = "Small"
+        self._type_ = "Small"
         self._fitness = 0
         self._lifespan = 100
         self._living = True
@@ -217,7 +223,7 @@ class SmallSolver(SolverInterface):
         # Index correlations: 0 = spread, 1 = total_modules, 
         # 2 = module_mutation_chance, 3 = property_mutation_chance; These are
         # hard-coded for individual and cannot mutate.
-        self._property_chances = [.1, .5, 10, 10]
+        self._property_chances = [1, 5, 25, 25]
 
         # Each solver has a 50% chance of being a unique-module solver
 #        self._unique = True if random.randint(1, 2) == 1 else False
@@ -449,7 +455,6 @@ class SmallSolver(SolverInterface):
         selection = random.randint(1, 100)
         # Mutate spread
         if selection <= self._property_chances[0]:  
-#			print ("%s: Mutating Spread" % self._name)
             # Make sure that there is always a chance for some degree of
             # mutation
             self.spread = Mutations.GaussianMutation(
@@ -458,28 +463,22 @@ class SmallSolver(SolverInterface):
                 item.updateSpread(self._spread)
         # Mutate total modules
         elif selection <= sum(self._property_chances[0:2]):
-#			print ("%s: Mutating Total Modules" % self._name)
-#			print ("Old: %d" % self._total_modules)
-#			self._total_modules = int(Mutations.GaussianMutation(self._total_modules, self._spread*self._total_modules/100)+.5)
             self._total_modules = int(Mutations.GaussianMutation(
                 self._total_modules, 1))  # hardcode spread to 1 module
-#			print ("New: %d" % self._total_modules)
         # Mutate module mutation chance
         elif selection <= sum(self._property_chances[0:3]):
-#			print ("%s: Mutating Module Mutation Chance" % self._name)
             self._module_mutation_chance = Mutations.GaussianMutation(
                 self._module_mutation_chance, self._spread * self._module_mutation_chance / 100)
         # Mutate property mutation chance
         elif selection <= sum(self._property_chances):
-#			print ("%s: Mutating Property Mutation Chance" % self._name)
             self._property_mutation_chance = Mutations.GaussianMutation(
                 self._property_mutation_chance, self._spread * self._property_mutation_chance / 100)
 
     # Survival functions
     def beginDay(self):
         """Return false if no longer living for removal. Increment age. Add or remove modules as needed."""
-        if self._age > self._lifespan:
-            self.Death()
+        if self._age >= self._lifespan:
+            self.death()
 
         if self._living:
             self._age += 1
@@ -488,7 +487,6 @@ class SmallSolver(SolverInterface):
             # Check if there are too many or too few modules (Can occure after
             # total_modules has been mutated or when no-parent solver is born)
             if len(self._modules) < self._total_modules:
-#				print ("Adding modules, Current: %d, Total: %d" % (len(self._modules), self._total_modules))
                 for x in range(0, self._total_modules - len(self._modules)):
                     self.addModule()
             elif len(self._modules) > self._total_modules:
@@ -521,11 +519,11 @@ class SmallSolver(SolverInterface):
 #            print("Solver %s failed the math domain and lost resilience." % self.name)
             if self._resilience == 0:
 #                print("Solver %s ran out of resilience and is DEAD!" % self.name)
-                self.Death()
+                self.death()
             elif self._resilience > 0:
                 self._resilience -= 1
         
-    def Death(self):
+    def death(self):
         """Flags solver for death at start of next day"""
         self._living = False
 
@@ -583,25 +581,28 @@ class SmallSolver(SolverInterface):
 
     def importAttributes(self, attributes):
         """Import pre-defined properties for solver."""
-        for item in self._permitted:
-            # Type-check the ~private variables since they have no setter.
-            if item in attributes:
-                if item == "_age":
-                    try:
-                        attributes[item] = int(attributes[item])
-                    except ValueError:
-                        attributes[item] = 1
-                elif item == "name":
-                    continue
-                elif item == "_children":
-                    try:
-                        attributes[item] = int(attributes[item])
-                    except ValueError:
-                        attributes[item] = 0
-                setattr(self, item, attributes[item])
-        # Modules require individual import
-        if "_modules" in attributes:
-            imported_modules = []
-            for mod in attributes["_modules"]:
-                imported_modules.append(importModule(mod))
-            self._modules = imported_modules
+        try:
+            for item in self._permitted:
+                # Type-check the ~private variables since they have no setter.
+                if item in attributes:
+                    if item == "_age":
+                        try:
+                            attributes[item] = int(attributes[item])
+                        except ValueError:
+                            attributes[item] = 1
+                    elif item == "name":
+                        continue
+                    elif item == "_children":
+                        try:
+                            attributes[item] = int(attributes[item])
+                        except ValueError:
+                            attributes[item] = 0
+                    setattr(self, item, attributes[item])
+            # Modules require individual import
+            if "_modules" in attributes:
+                imported_modules = []
+                for mod in attributes["_modules"]:
+                    imported_modules.append(importModule(mod))
+                self._modules = imported_modules
+        except TypeError:
+            print("Error: unable to import conditions, unrecognized type sent.")

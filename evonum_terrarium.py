@@ -151,7 +151,7 @@ class Terrarium(object):
                 luckyday = True if random.randint(
                     1, 100) <= self._chance_to_survive_prune else False
                 if not luckyday:
-                    item[0].Death()
+                    item[0].death()
         for item in self._forces:
             # Dynamic fitness forces adjust the chance of each random variable
             # based on past performance of solvers. Give solvers a 100 days to
@@ -175,7 +175,7 @@ class Terrarium(object):
             pass         
         else:
             for item in withheld_solvers[self._max_withheld:]:
-                item.Death()
+                item.death()
         return None
     
     # Print solvers that have survived at least one day.
