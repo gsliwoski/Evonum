@@ -19,3 +19,6 @@ Force: 1, Simple, Position, primes_1000.txt - this is the prime number force.
 Anything after '#' in script file is ignored.
 
 Detailed explanations can be found in evonum_documentation.odt
+
+test_*.py are unit tests meant to be run with pytest (http://pytest.org/latest/).
+
