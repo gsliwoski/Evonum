@@ -2,6 +2,7 @@ from __future__ import print_function
 import inspect
 import random
 import math
+import types
 from copy import deepcopy
 from evonum_mutations import *
 from evonum_modules import *
@@ -10,23 +11,27 @@ from evonum_modules import *
 def error():
     raise NotImplementedError("%s not implemented" %
                               inspect.stack()[1][3])  # Used for interface
-                              
+
+
 def badAttribute(attribute, bad_type, solver_name):
     """Error message when attempting to assign new value of bad type to a solver property."""
-    print("Error: Bad %s type %s sent to solver %s, returning unchanged." % (attribute, bad_type, solver_name))
+    print("Error: Bad %s type %s sent to solver %s, returning unchanged." %
+          (attribute, bad_type, solver_name))
+
 
 def createSolver(solver_type="Small", name=None, conditions=None):
     """Returns a new solver of supplied type and supplied name
-    
+
     Option third argument is a dictionary of mutatable attributes to import
     """
-    
-    if solver_type == "Small":        
+
+    if solver_type == "Small":
         new_solver = SmallSolver(name, conditions)
     else:
         print("Unknown solver type: %s" % solver_type)
         new_solver = None
     return new_solver
+
 
 def importSolver(solver_dict):
     """Import serialized solver"""
@@ -43,11 +48,13 @@ def importSolver(solver_dict):
         new_solver.importAttributes(solver_dict)
     return new_solver
 
+
 class FitnessCalculator(object):
     # Overall fitness is the sum of fitness scores for each type of fitness
+
     def calculateFitness(self, fitness_forces, modules):
         """Calculate overall solver fitness.
-        
+
         Takes list of fitness force objects and list of module objects.
         Returns fitness value.
         Fitness is a sum of individual fitness force scores.
@@ -72,8 +79,8 @@ class LinearFitness(FitnessCalculator):
     """Sums all module responses before calculating fitness."""
     @property
     def type_(self):
-        return "LinearFitness"
-        
+        return "Linear"
+
     def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
             running_total = 0
@@ -94,12 +101,13 @@ class LinearFitness(FitnessCalculator):
         else:  # If it has no modules capable of dealing with the recognized force
             return force.penalty
 
+
 class DynamicFitness(FitnessCalculator):
     """Randomly select modules to calculate fitness and sum responses."""
     @property
     def type_(self):
-        return "DynamicFitness"
-        
+        return "Dynamic"
+
     def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
             running_total = 0
@@ -126,20 +134,20 @@ class DynamicFitness(FitnessCalculator):
 
 
 class SolverInterface(object):
-    
-    def mutate(self):  
+
+    def mutate(self):
         error()
 
-    def clone(self):  
+    def clone(self):
         error()
 
-    def reproduce(self):  
+    def reproduce(self):
         error()
 
-    def getDescription(self):  
+    def getDescription(self):
         error()
 
-    def softReset(self, new_name):  
+    def softReset(self, new_name):
         error()
 
     def beginDay(self):
@@ -148,12 +156,12 @@ class SolverInterface(object):
     def calculateFitness(self, fitness_forces):
         error()
 
-    def death(self):  
+    def death(self):
         error()
-    
+
     def exportDict(self):
         error()
-    
+
     def importAttributes(self, attribute_dictionary):
         error()
 
@@ -161,16 +169,16 @@ class SolverInterface(object):
     @property
     def type_(self):
         return self._type_
-        
+
     @property
     def name(self):
         return self._name
-    
+
     @property
     def living(self):
         """False if solver is over age limit or failed fitness test"""
-        return self._living        
-    
+        return self._living
+
     @property
     def age(self):
         return self._age
@@ -179,32 +187,46 @@ class SolverInterface(object):
     def fitness(self):
         """Fitness score is used to rank solvers and determine survivors"""
         return self._fitness
-    
+
     @property
     def lifespan(self):
         """Max age in days before living = False"""
         return self._lifespan
-    
+
     @property
     def permitted(self):
-        """List of properties that may be imported/exported"""
+        """List of properties that may be imported"""
         return self._permitted
-    
+
     @property
     def resilience(self):
         """int times remaining a solver can survive a math domain error without dieing
-        
+
         When a solver survives a domain error, it is excluded from 1 pruning and 1 reproduction.
         Resilience of -1 means solver always survives domain errors.
         """
         return self._resilience
-    
+
+    @resilience.setter
+    def resilience(self, value):
+        try:
+            value = int(value)
+        except ValueError:
+            badAttribute("resilience", type(value), self._resilience)
+            return
+        if value > 1000000:
+            value = 1000000
+        elif value < 0:
+            value = 0
+        self._resilience = value
+
+
 class SmallSolver(SolverInterface):
     """Small solvers calculate fitness based on collection of modules
-    
+
     Reproduction invokes deepcopy clone and 1 round of mutations.
     Modules may be combined as linear or dynamic."""
-    
+
     def __init__(self, name=None, conditions=None):
         # Static properties
         if name is None:
@@ -220,15 +242,15 @@ class SmallSolver(SolverInterface):
         self._modules = []
         self._resilience = 2
 
-        # Index correlations: 0 = spread, 1 = total_modules, 
+        # Index correlations: 0 = spread, 1 = total_modules,
         # 2 = module_mutation_chance, 3 = property_mutation_chance; These are
         # hard-coded for individual and cannot mutate.
-        self._property_chances = [1, 5, 25, 25]
+        self._property_chances = [1, 1, 60, 30]
 
         # Each solver has a 50% chance of being a unique-module solver
 #        self._unique = True if random.randint(1, 2) == 1 else False
         self._unique = False
-               
+
         # Determines the way modules are connected to calculate response
         self._fitness_calculator = LinearFitness()
 
@@ -238,16 +260,18 @@ class SmallSolver(SolverInterface):
         self._module_mutation_chance = 50
         self._property_mutation_chance = 10
         self._swap_module_chance = 15
-        self._merge_module_chance = 50    
-        self._permitted = ["name", "_age", "_children", "unique", "fitness_calculator", "spread", "total_modules", "module_mutation_chance", "property_mutation_chance", "swap_module_chance", "merge_module_chance", "resilience" ]
+        self._merge_module_chance = 50
+        self._permitted = ["_age", "_children", "unique", "fitness_calculator", "spread", "total_modules",
+                           "module_mutation_chance", "property_mutation_chance", "swap_module_chance", "merge_module_chance", "resilience"]
         if conditions:
             self.importAttributes(conditions)
-    #Property management
-    @property        
+    # Property management
+
+    @property
     def spread(self):
         """Controls the width of gaussian mutations; Mutatable"""
         return self._spread
-    
+
     @spread.setter
     def spread(self, value):
         try:
@@ -260,12 +284,12 @@ class SmallSolver(SolverInterface):
         elif value > 1000:
             value = 1000
         self._spread = value
-    
+
     @property
     def total_modules(self):
         """Current number of modules in a solver; Mutatable"""
         return self._total_modules
-    
+
     @total_modules.setter
     def total_modules(self, value):
         try:
@@ -278,12 +302,12 @@ class SmallSolver(SolverInterface):
         elif value < 1:
             value = 1
         self._total_modules = value
-   
+
     @property
     def module_mutation_chance(self):
         """Percent chance each module has of mutating during reproduction; Mutatable"""
         return self._module_mutation_chance
-    
+
     @module_mutation_chance.setter
     def module_mutation_chance(self, value):
         try:
@@ -296,12 +320,12 @@ class SmallSolver(SolverInterface):
         elif value < 0:
             value = 0
         self._module_mutation_chance = value
-    
+
     @property
     def property_mutation_chance(self):
         """Percent chance one of the mutatable properties will mutate; Mutatable"""
         return self._property_mutation_chance
-    
+
     @property_mutation_chance.setter
     def property_mutation_chance(self, value):
         try:
@@ -314,12 +338,12 @@ class SmallSolver(SolverInterface):
         elif value < 0:
             value = 0
         self._property_mutation_chance = value
-    
+
     @property
     def swap_module_chance(self):
         """Percent chance that a module will be swapped for a module of a different sub-type; Mutatable"""
         return self._swap_module_chance
-    
+
     @swap_module_chance.setter
     def swap_module_chance(self, value):
         try:
@@ -332,7 +356,7 @@ class SmallSolver(SolverInterface):
         elif value < 0:
             value = 0
         self._swap_module_chance = value
-    
+
     @property
     def merge_module_chance(self):
         """Percent chance two modules of the same subtype will be additively merged; Mutatable"""
@@ -350,18 +374,18 @@ class SmallSolver(SolverInterface):
         elif value < 0:
             value = 0
         self._merge_module_chance = value
-    
+
     @property
     def unique(self):
         """True = module subtypes can not be repeated unless out of new subtypes"""
         return self._unique
-    
+
     @unique.setter
     def unique(self, value):
-        if value == "True" or value == 1:
+        if value == True or value == 1 or (isinstance(value, types.StringTypes) and value.upper()) == "TRUE":
             self._unique = True
         else:
-            self._unique = False        
+            self._unique = False
 
     @property
     def living(self):
@@ -372,7 +396,7 @@ class SmallSolver(SolverInterface):
     def fitness_calculator(self):
         """Method that modules are combined to calculate fitness"""
         return self._fitness_calculator.type_
-            
+
     @fitness_calculator.setter
     def fitness_calculator(self, value):
         if value == "Linear":
@@ -382,7 +406,7 @@ class SmallSolver(SolverInterface):
         else:
             badAttribute("fitness_calculator", value, self._name)
             return
-                 
+
     # Reproductive actions
     def clone(self):
         """Return a deepcopy of self"""
@@ -398,7 +422,7 @@ class SmallSolver(SolverInterface):
                 child_name = self._name.split(
                     ".")[0] + "." + str(int(self._name.split(".")[1]) + 1)
             except IndexError:
-                child_name = self._name+"."+str(self._children)       
+                child_name = self._name + "." + str(self._children)
             clone.softReset(child_name)
             clone.mutate()
             clone._age = 1
@@ -433,17 +457,15 @@ class SmallSolver(SolverInterface):
         # Mutate each module with a set chance to mutate
         for x in range(0, len(self._modules)):
             if chances[x + 1] <= self.module_mutation_chance:
-#				print ("%s: Mutating module #%d" % (self._name, (x+1)))
                 if random.randint(1, 100) <= self.swap_module_chance:
-#					print ("swapping out "+self._modules[x].subtype)
                     if not self.unique:
                         self._modules[x] = createUniqueModule(
                             "Fitness", [self._modules[x].subtype])
                     else:
                         present_subtypes = [y.subtype
                                             for y in self._modules]
-                        self._modules[x] = createUniqueModule("Fitness", present_subtypes)
-#					print ("swapping in "+self._modules[x].subtype)
+                        self._modules[x] = createUniqueModule(
+                            "Fitness", present_subtypes)
                 else:
                     self._modules[x].mutate()
 
@@ -454,24 +476,24 @@ class SmallSolver(SolverInterface):
         """Mutate a single mutatable property"""
         selection = random.randint(1, 100)
         # Mutate spread
-        if selection <= self._property_chances[0]:  
+        if selection <= self._property_chances[0]:
             # Make sure that there is always a chance for some degree of
             # mutation
             self.spread = Mutations.GaussianMutation(
                 self.spread, 1 if self.spread == 0 else self.spread)
             for item in self._modules:
-                item.updateSpread(self._spread)
+                item.spread = self._spread
         # Mutate total modules
         elif selection <= sum(self._property_chances[0:2]):
-            self._total_modules = int(Mutations.GaussianMutation(
+            self.total_modules = int(Mutations.GaussianMutation(
                 self._total_modules, 1))  # hardcode spread to 1 module
         # Mutate module mutation chance
         elif selection <= sum(self._property_chances[0:3]):
-            self._module_mutation_chance = Mutations.GaussianMutation(
+            self.module_mutation_chance = Mutations.GaussianMutation(
                 self._module_mutation_chance, self._spread * self._module_mutation_chance / 100)
         # Mutate property mutation chance
         elif selection <= sum(self._property_chances):
-            self._property_mutation_chance = Mutations.GaussianMutation(
+            self.property_mutation_chance = Mutations.GaussianMutation(
                 self._property_mutation_chance, self._spread * self._property_mutation_chance / 100)
 
     # Survival functions
@@ -507,49 +529,47 @@ class SmallSolver(SolverInterface):
             self._modules.append(createModule("Fitness", "Random"))
         else:
             present_subtypes = [x.subtype for x in self._modules]
-            self._modules.append(createUniqueModule("Fitness", present_subtypes))
+            self._modules.append(createUniqueModule(
+                "Fitness", present_subtypes))
 
     def calculateFitness(self, fitness_forces):
         """store sum fitness score of each fitness_force in provided list.
-        
+
         Math domain errors return None and dock a resilient."""
         self._fitness = self._fitness_calculator.calculateFitness(
             fitness_forces, self._modules)
         if self._fitness is None:
-#            print("Solver %s failed the math domain and lost resilience." % self.name)
+            #            print("Solver %s failed the math domain and lost resilience." % self.name)
             if self._resilience == 0:
-#                print("Solver %s ran out of resilience and is DEAD!" % self.name)
+                #                print("Solver %s ran out of resilience and is DEAD!" % self.name)
                 self.death()
             elif self._resilience > 0:
                 self._resilience -= 1
-        
+
     def death(self):
         """Flags solver for death at start of next day"""
         self._living = False
 
     def mergeModules(self):
-        """Merge the first two modules found that have the same subtype and add a unique module in the second one's place."""    
+        """Merge the first two modules found that have the same subtype and add a unique module in the second one's place."""
         module_subtypes = {}
         for i, item in enumerate(self._modules):
             if item.subtype in module_subtypes:
-#				print ("Merging modules of subtypes:", item.subtype)
-#				print ("Before merge:")
-#				print (self.getDescription())
-                new_modules = mergeFitnessModules(self._modules[i], self._modules[module_subtypes[item.subtype]])
+                new_modules = mergeFitnessModules(self._modules[i], self._modules[
+                                                  module_subtypes[item.subtype]])
                 self._modules[module_subtypes[item.subtype]] = new_modules[
                     0]
                 self._modules[i] = new_modules[1]
-#				print ("After merge:")
-#				print (self.getDescription())
                 break
             else:
                 module_subtypes[item.subtype] = i
 
-    #I/O Functions
+    # I/O Functions
     def getDescription(self):
         """Returns string containing important solver properties and modules"""
         desc = "-" * 30 + "\n"
-        # Shorten name if too long. TODO: improve naming convention so this isn't needed.
+        # Shorten name if too long. TODO: improve naming convention so this
+        # isn't needed.
         if len(self._name) > 50:
             name = self._name[:30] + "..." + self._name[-3:]
         else:
@@ -564,7 +584,7 @@ class SmallSolver(SolverInterface):
         if self._fitness is None:
             desc += "\nNo fitness score available, solver currently withheld!"
         else:
-            desc +="\nFitness score: %.2f" % self._fitness
+            desc += "\nFitness score: %.2f" % self._fitness
         desc += "\n" + "-" * 30
         return desc
 
@@ -577,6 +597,7 @@ class SmallSolver(SolverInterface):
         for item in self._modules:
             out_dict["_modules"].append(item.exportDict())
         out_dict["_type_"] = "Small"
+        out_dict["name"] = self._name
         return out_dict
 
     def importAttributes(self, attributes):

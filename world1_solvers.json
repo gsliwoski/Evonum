@@ -1,0 +1,472 @@
+[
+{
+  "_age": 95, 
+  "_children": 94, 
+  "_modules": [
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": -11.56820267461309, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_1", 
+      "_type_": "Fitness", 
+      "coeff": 55.85525197790497, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_4", 
+      "_type_": "Fitness", 
+      "coeff": -7, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_2", 
+      "_type_": "Fitness", 
+      "coeff": -60, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 51.687666027727175, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 46.16831657471312, 
+  "name": "Solver32_0.22", 
+  "property_mutation_chance": 10, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 95, 
+  "_children": 94, 
+  "_modules": [
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": 4.713905739278271, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_1", 
+      "_type_": "Fitness", 
+      "coeff": 72.12965648209341, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_4", 
+      "_type_": "Fitness", 
+      "coeff": -2.9337548367502206, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_1", 
+      "_type_": "Fitness", 
+      "coeff": -75.26661045314486, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 45.185170446322076, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 46.16831657471312, 
+  "name": "Solver32_0.23", 
+  "property_mutation_chance": 10.859562930286604, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 95, 
+  "_children": 94, 
+  "_modules": [
+    {
+      "_subtype": "Cosine_5", 
+      "_type_": "Fitness", 
+      "coeff": 15.158236583366168, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_4", 
+      "_type_": "Fitness", 
+      "coeff": -16.12812827545493, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_1", 
+      "_type_": "Fitness", 
+      "coeff": 22, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": 25.84788411755507, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": -18.29443141968862, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 48.547583741420645, 
+  "name": "Solver14_0.18", 
+  "property_mutation_chance": 10, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 95, 
+  "_children": 94, 
+  "_modules": [
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": 4.918375682777458, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_1", 
+      "_type_": "Fitness", 
+      "coeff": 73.54843840285828, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_4", 
+      "_type_": "Fitness", 
+      "coeff": -2.6035759733210475, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_1", 
+      "_type_": "Fitness", 
+      "coeff": -79.31730149694829, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 18.567465679412653, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 46.16831657471312, 
+  "name": "Solver32_0.24", 
+  "property_mutation_chance": 10.859562930286604, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 95, 
+  "_children": 94, 
+  "_modules": [
+    {
+      "_subtype": "Cosine_1", 
+      "_type_": "Fitness", 
+      "coeff": -28, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_5", 
+      "_type_": "Fitness", 
+      "coeff": -22.879085943821458, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_3", 
+      "_type_": "Fitness", 
+      "coeff": -47.76814674462686, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_4", 
+      "_type_": "Fitness", 
+      "coeff": 27.823539523608357, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 85, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 58.43347057138673, 
+  "name": "Solver39_0.24", 
+  "property_mutation_chance": 10, 
+  "resilience": 0, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 94, 
+  "_children": 93, 
+  "_modules": [
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": -11.56820267461309, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_1", 
+      "_type_": "Fitness", 
+      "coeff": 55.85525197790497, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_4", 
+      "_type_": "Fitness", 
+      "coeff": -7, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_2", 
+      "_type_": "Fitness", 
+      "coeff": -60, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 51.687666027727175, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 46.16831657471312, 
+  "name": "Solver32_0.23", 
+  "property_mutation_chance": 10, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 94, 
+  "_children": 93, 
+  "_modules": [
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": 4.713905739278271, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_1", 
+      "_type_": "Fitness", 
+      "coeff": 80.3760721194599, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_4", 
+      "_type_": "Fitness", 
+      "coeff": -2.9337548367502206, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_1", 
+      "_type_": "Fitness", 
+      "coeff": -75.26661045314486, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 28.29674243511862, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 46.16831657471312, 
+  "name": "Solver32_0.24", 
+  "property_mutation_chance": 10.859562930286604, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 94, 
+  "_children": 93, 
+  "_modules": [
+    {
+      "_subtype": "Cosine_5", 
+      "_type_": "Fitness", 
+      "coeff": 15.158236583366168, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_4", 
+      "_type_": "Fitness", 
+      "coeff": -16.12812827545493, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_1", 
+      "_type_": "Fitness", 
+      "coeff": 18.101762980920405, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_2", 
+      "_type_": "Fitness", 
+      "coeff": -100, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": -17.696442135292198, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 48.547583741420645, 
+  "name": "Solver14_0.19", 
+  "property_mutation_chance": 10, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 94, 
+  "_children": 93, 
+  "_modules": [
+    {
+      "_subtype": "Sine_5", 
+      "_type_": "Fitness", 
+      "coeff": 14.098380606748517, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_1", 
+      "_type_": "Fitness", 
+      "coeff": 73.54843840285828, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_4", 
+      "_type_": "Fitness", 
+      "coeff": -2.6035759733210475, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_1", 
+      "_type_": "Fitness", 
+      "coeff": -77.8944165486286, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_4", 
+      "_type_": "Fitness", 
+      "coeff": -24, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 46.16831657471312, 
+  "name": "Solver32_0.25", 
+  "property_mutation_chance": 10.859562930286604, 
+  "resilience": 2, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+},
+{
+  "_age": 94, 
+  "_children": 93, 
+  "_modules": [
+    {
+      "_subtype": "Cosine_1", 
+      "_type_": "Fitness", 
+      "coeff": -28, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_5", 
+      "_type_": "Fitness", 
+      "coeff": -22.879085943821458, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Power_3", 
+      "_type_": "Fitness", 
+      "coeff": -67.98392795281625, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Cosine_3", 
+      "_type_": "Fitness", 
+      "coeff": -31, 
+      "spread": 10.0
+    }, 
+    {
+      "_subtype": "Sine_3", 
+      "_type_": "Fitness", 
+      "coeff": 85, 
+      "spread": 10.0
+    }
+  ], 
+  "_type_": "Small", 
+  "fitness_calculator": "Linear", 
+  "merge_module_chance": 50, 
+  "module_mutation_chance": 58.43347057138673, 
+  "name": "Solver39_0.25", 
+  "property_mutation_chance": 10, 
+  "resilience": 0, 
+  "spread": 10, 
+  "swap_module_chance": 15, 
+  "total_modules": 5, 
+  "unique": false
+}
+]

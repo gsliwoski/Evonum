@@ -1,11 +1,13 @@
 from __future__ import print_function
+import types
 from evonum_fitness import *
 from evonum_solvers import *
 import json
 
+
 def json_out(o):
-#    print(o.exportDict())
     return o.exportDict()
+
 
 class Terrarium(object):
 
@@ -25,9 +27,10 @@ class Terrarium(object):
             print ("Already at max forces. No force added.")
             return
         else:
-            new_force = createFitnessForce(force_type, force_subtype, conditions)
+            new_force = createFitnessForce(
+                force_type, force_subtype, conditions)
         if new_force:
-            self._forces.append(new_force)            
+            self._forces.append(new_force)
         else:
             print("Error: failed to create force, no force added.")
 
@@ -37,7 +40,8 @@ class Terrarium(object):
         name = "Solver" + str(len(self._solvers) + 1) + \
             "_" + str(self._current_day) + ".1"
         if solver_type == "Small":
-            self._solvers.append(createSolver("Small", name, self._solver_conditions))
+            self._solvers.append(createSolver(
+                "Small", name, self._solver_conditions))
         else:
             print("Error: unknown solver type %s. No solver added." % solver_type)
 
@@ -66,9 +70,10 @@ class Terrarium(object):
         self._solvers = surviving
         self.reproduceSolvers()  # Every surviving solver reproduces once at start of day
         self.evaluateSolvers()  # Every solver and new progeny gets evaluated
-        solver_scores, withheld_solvers = self.scoreSolvers()  # For printing to screen or other logging
+        # For printing to screen or other logging
+        solver_scores, withheld_solvers = self.scoreSolvers()
         if len(solver_scores) > 0:
-           print ("%d\t%.2f" % (self._current_day, solver_scores[0][1]))
+            print ("%d\t%.2f" % (self._current_day, solver_scores[0][1]))
         else:
             print("%d\tAll solvers dead or withheld!" % self._current_day)
         self.pruneWithheld(withheld_solvers)
@@ -118,33 +123,35 @@ class Terrarium(object):
             for item in solver_scores:
                 avg += item[1]
             avg = avg / len(solver_scores)
-            outfile.write(" AvgFit: " + str(avg) + " MaxFit: " + str(solver_scores[0][1]))
+            outfile.write(" AvgFit: " + str(avg) +
+                          " MaxFit: " + str(solver_scores[0][1]))
         else:
-            outfile.write(" All solvers dead or withheld!")                 
+            outfile.write(" All solvers dead or withheld!")
         outfile.write("\nForces:\n")
         for item in self._forces:
             outfile.write(item.getDescription() + "\n")
-        outfile.write("Total solvers withheld due to math domain failure: %d\n" % len(withheld_solvers))
+        outfile.write("Total solvers withheld due to math domain failure: %d\n" % len(
+            withheld_solvers))
         if len(solver_scores) > 0:
             outfile.write("\n" + "=" * 50 + "\n")
             outfile.write("Top 5 solvers:\n")
             for item in solver_scores[:4]:
-                outfile.write(item[0].getDescription())  
+                outfile.write(item[0].getDescription())
             outfile.write("\nOldest solvers\n")
             solver_scores.sort(key=lambda x: x[2], reverse=True)
             for item in solver_scores[:2]:
-               outfile.write(item[0].getDescription())
-            outfile.write("\n")      
+                outfile.write(item[0].getDescription())
+            outfile.write("\n")
         outfile.close()
 
     def pruneSolvers(self, solver_scores):
         """Remove solvers with lowest fitness score."""
         if len(solver_scores) < self._max_solvers:
-#			print ("No pruning necessary")
+            #			print ("No pruning necessary")
             pass
         else:
-#			print ("Population: %s\tMax Population: %s\tNeed to kill: %s" % (len(self._solvers), self._max_solvers, len(self._solvers)-self._max_solvers))
-#            solver_scores = [[x] for x in self._solvers]
+            #			print ("Population: %s\tMax Population: %s\tNeed to kill: %s" % (len(self._solvers), self._max_solvers, len(self._solvers)-self._max_solvers))
+            #            solver_scores = [[x] for x in self._solvers]
             for item in solver_scores[self._max_solvers:]:
                 # Each solver failing the fitness check has a last chance to
                 # survive
@@ -167,17 +174,15 @@ class Terrarium(object):
                 item.avg_fitness = avg
                 condition, temp = item.conditions
                 item.updateConditionProbability(condition, increase)
-#			for item in solver_scores:
-#				print (item[0].name+"\t"+str(item[1]))
 
     def pruneWithheld(self, withheld_solvers):
         if len(withheld_solvers) < self._max_withheld:
-            pass         
+            pass
         else:
             for item in withheld_solvers[self._max_withheld:]:
                 item.death()
         return None
-    
+
     # Print solvers that have survived at least one day.
     def printSolvers(self):
         """Print descriptions of solvers that have survived at least 1 day."""
@@ -202,19 +207,29 @@ class Terrarium(object):
         solver_jsons = []
         for item in self._solvers:
             if item.age > 0 and item.living:
-                solver_jsons.append(json.dumps(item, default=json_out, indent=2, sort_keys=True))
+                solver_jsons.append(json.dumps(
+                    item, default=json_out, indent=2, sort_keys=True))
         return solver_jsons
 
     def importSolvers(self, solvers_json):
         """Imports list of solvers in json string format."""
-        prev = len(self._solvers)
-        for item in solvers_json:
-            self._solvers.append(importSolver(item))
-        print("%d solvers imported to world." % (len(self._solvers) - prev))
+        if not isinstance(solvers_json, types.StringTypes):
+            prev = len(self._solvers)
+            try:
+                for item in solvers_json:
+                    self._solvers.append(importSolver(item))
+                print("%d solvers imported to world." %
+                      (len(self._solvers) - prev))
+            except TypeError:
+                print(
+                    "Error: import solvers must recieve iterable list of solver jsons, unable to import.")
+        else:
+            print(
+                "Error: import solvers must recieve iterable list of solver jsons, unable to import.")
 
     def endWorld(self, days, destination):
         """Ramp down max population each day to reach final value in shape 1/x.
-    
+
         Takes days, destination where days = number of days to ramp down and destination = target population.
         """
         try:
@@ -229,12 +244,19 @@ class Terrarium(object):
         b = self._max_solvers - m
         for x in range(1, days + 1):
             self._max_solvers = int(m / x + b + .5)
-#			print ("Max solvers:",self._max_solvers)
             self.runDays(1)
 
-    def importAttributes(self, attributes):#TODO: improve
-        for item in attributes:
-            setattr(self, item, attributes[item])
-    
-    def updateSolverConditions(self, conditions): #TODO: remove or improve
-        self._solver_conditions.update(conditions)   
+    def importSolverConditions(self, conditions):
+        self._solver_conditions.update(conditions)
+
+    def importSettings(self, settings):
+        try:
+            for item in settings:
+                if item == "_max_solvers":
+                    self._max_solvers = settings[item]
+                elif item == "_max_forces":
+                    self._max_forces = settings[item]
+                elif item == "_chance_to_survive_prune":
+                    self._chance_to_survive_prune = settings[item]
+        except TypeError:
+            print("Error: unable to import terrarium settings, leaving at default!")

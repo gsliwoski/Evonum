@@ -1,15 +1,39 @@
-				###Define script simulation###
+			###Define script simulation###
 
-World: 100, 5, 1,3      							                     # Set up world: max_solvers, max_fitness_forces, % chance to survive failed fitness test, # Modules fresh solvers are born with
+            # Set up world: max_solvers, max_fitness_forces, % chance to survive failed fitness test, # Modules fresh solvers are born with
 
-#Force: 1, Simple, Equation, 5.3*pow(x,2)+log(x,e), 1, 100           # Add fitness force: # of fitness forces of this type to add, (current subtypes supported = Simple and Dynamic), subtype (Equation or Position), conditions to load
-Force: 1, Dynamic, Equation, tan(x), -1.570796, 1.570796             # Equation must be in pythonic form and must be followed with min and max, Position condition is a filename with the ordered list of values.
+World: 100, 5, 1,3
+
+            # Add fitness force: # of fitness forces of this type to add, (current subtypes supported = Simple and Dynamic), subtype (Equation or Position), conditions to load
+            # Equation condition is equation that must be in pythonic form and must be followed with min and max for random variable
+            # Position condition is a filename with the ordered list of values.
+
+#Force: 1, Simple, Equation, 5.3*pow(x,2)+log(x,e), 1, 100           
+Force: 1, Simple, Equation, tan(x), -1.5, 1.5                       
 #Force: 1, Simple, Position, primes_1000.txt
-#Force: 1, Simple, Identity, 1,500                                    # Identity force: randomly selects x and expects x. Conditions are min, max for x.
+#Force: 1, Simple, Identity, 1,500                                    
 #Force: 1, Simple, Equation, sin(x)+53.4*pow(cos(x),4)-15*pow(cos(x),2)+log10(x), 1, 1000
 
-Solver: 100 										                 #Number of new solvers to start with
-Import: world1_solvers.json                                          #Import solvers from file in JSON array format.
-#Refresh Solvers: 50, 10 						                     #Add random solvers at regular intervals: # of solvers to add, # of days between addition
-Run: 100 									                         #Run for specified number of days
-#End: 1000, 10 									                     #Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.
+            # Number of new solvers to start with
+
+Solver: 100 										                 
+
+            # Import solvers from file in JSON array format.
+
+Import: world1_solvers.json                                          
+
+            # Add random solvers at regular intervals: # of solvers to add, # of days between addition
+
+Refresh Solvers: 50, 10 						                     
+
+            # Run for specified number of days
+
+Run: 10000 									                         
+
+            # Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.
+
+End: 1000, 10 									                     
+
+            # Sets export to true so all living solvers are exported into json array file with specified prefix at end of run. Prefix is optional
+
+Export: test_result_                                                 
