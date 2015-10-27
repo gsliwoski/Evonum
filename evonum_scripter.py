@@ -19,6 +19,7 @@ class SimpleScripter(object):
         self._forces = []
         self._refresh_rate = [0, 0]
         self._export = None
+        self._solver_settings = {}
 
         for line in script:
             line = line.strip()
@@ -26,8 +27,8 @@ class SimpleScripter(object):
                 line = line.split("#")[0]
             if line.startswith("World"):
                 self._worlds.append(Terrarium())
-                sets = [item.strip() for item in line.split(":")[1].split(",")]
                 try:
+                    sets = [item.strip() for item in line.split(":")[1].split(",")]
                     settings = {"_max_solvers": int(sets[0]), "_max_forces": int(
                         sets[1]), "_chance_to_survive_prune": float(sets[2])}
                 except IndexError:
@@ -76,12 +77,24 @@ class SimpleScripter(object):
                 if len(self._worlds) == 0:
                     raise ValueError(
                         "Error: world initialization must be first line of script!")
-                sets = int(line.split(":")[1].strip())
+                try:
+                    sets = line.split(":")[1].strip().split(",")
+                    solver_count = int(sets[0])
+                except (ValueError, IndexError):
+                    raise ValueError("Error: Solvers must be followed by int number of solvers to begin with.")
+                try:
+                    solver_settings = ",".join(sets[1:])
+                except IndexError:
+                   solver_settings = None
+                self._solver_settings = self.parseSolverSettings(solver_settings)
                 for pos, item in enumerate(self._worlds):
-                    for x in range(0, sets):
+                    if self._solver_settings != {}:
+                        item.importSolverSettings(self._solver_settings)
+                        print("Solver settings imported to world"+str(pos+1)+": "+str(self._solver_settings))
+                    for x in range(0, solver_count):
                         item.addSolver()
                     print ("%d solvers added to world%d." %
-                           (int(sets), pos + 1))
+                           (solver_count, pos + 1))
 
             elif line.startswith("Import"):
                 if len(self._worlds) == 0:
@@ -201,3 +214,17 @@ class SimpleScripter(object):
                     outfile.close()
                 else:
                     print("No solvers to export from world%d" % (pos + 1))
+
+    def parseSolverSettings(self, settings):
+        parsed_settings = {}
+        if settings is None or settings == "":
+            return parsed_settings
+        settings = settings.split(",")
+        for item in settings:
+            item = item.strip().split("=")
+            if len(item) != 2:
+                print "Error: solver settings must be of form variable = value. Using default solver settings."
+                return {}
+            parsed_settings[item[0].strip()] = item[1].strip()
+        return parsed_settings
+            

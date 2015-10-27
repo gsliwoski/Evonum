@@ -92,10 +92,10 @@ class TestRunTerrariumIntegrationTests:
         assert total_living == 3
         assert total_dead == 1
 
-    def test_specify_solver_conditions(self):
+    def test_specify_solver_settings(self):
         """!!!Integration Test!!!"""
-        specific_conditions_world = Terrarium()
-        conditions = {"total_modules": 3}
-        specific_conditions_world.importSolverConditions(conditions)
-        specific_conditions_world.addSolver()
-        assert specific_conditions_world._solvers[0].total_modules == 3
+        specific_settings_world = Terrarium()
+        settings = {"total_modules": 3}
+        specific_settings_world.importSolverSettings(settings)
+        specific_settings_world.addSolver()
+        assert specific_settings_world._solvers[0].total_modules == 3

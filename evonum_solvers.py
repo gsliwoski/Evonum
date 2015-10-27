@@ -51,7 +51,13 @@ def importSolver(solver_dict):
 
 class FitnessCalculator(object):
     # Overall fitness is the sum of fitness scores for each type of fitness
-
+    
+    def mutate(self):
+        """Specialized fitness calculators have parameters than can mutate.
+        
+        Standard fitness calculators do not mutate and mutate calls pass."""
+        pass
+        
     def calculateFitness(self, fitness_forces, modules):
         """Calculate overall solver fitness.
 
@@ -132,7 +138,203 @@ class DynamicFitness(FitnessCalculator):
         if not responded:  # If it has no modules capable of dealing with the recognized force
             return force.penalty
 
+class TeiredFitness(FitnessCalculator):
+    """Modules are teired with variable operations allowing for complex combinations.
+    
+    Stacks are designed to handle modules up to max_stack_length (100) and will ignore addition modules.
+    Stacks are adjusted to reflect number of modules they recieve. However, they will not react to module
+    merging.
+    Stacks can take settings during initialization that specify a predefined module_stack.
+    Added stacks will always be the [5, "Add"]
+    Last stack operation is always ignored.
+    Teir range is enforced at 1 - 10.
+    """
 
+    def __init__(self, settings=None):
+        self._module_stack = [[5, "Add"]]*5
+        if settings is not None:
+            try:
+                stack_settings = self.translate_settings(settings)
+            except ValueError:
+                print("Error: bad settings for Stack Fitness calculator. Returning unchanged.")
+                stack_settings = self._module_stack
+            self._module_stack = stack_settings
+        self._operations = ["Add", "Subtract", "Multiply", "Divide"]
+        self._plasticity = 1
+        self._max_stack_length = 100
+        self._mutate_operation_chance = 50
+        self._mutate_teir_chance = 50
+          
+    @property
+    def type_(self):     
+        string = "_".join(["Teired", "_".join(["_".join([str(y) for y in x]) for x in self.module_stack])])
+        return string
+    
+    @property
+    def plasticity(self):
+        """Specifies max # of module wrappers can be mutated in one pass. Max = 100, Min = 0"""
+        return self._plasticity
+    
+    @plasticity.setter
+    def plasticity(self, value):
+        try:
+            value = int(value)
+        except ValueError:
+            print("Error: bad plasticity value sent to teired fitness. Returning unchanged.")
+            return
+        if value > 100:
+            value = 100
+        elif value < 0:
+            value = 0
+        self._plasticity = value
+    
+    @property
+    def module_stack(self):
+        """List of module wrappers, each wrapper defines the module's teir and operation."""
+        return self._module_stack
+    
+    @module_stack.setter
+    def module_stack(self, value):
+        try:
+            holder = []
+            for item in value:
+                checked_item = self.check_stack_value(item)
+                holder.append(checked_item)
+        except TypeError:
+            print("Error: bad type sent to module_stack, returning unchanged.")
+            return
+        self._module_stack = holder
+    
+    def check_stack_value(self, stack):
+        """Checks individual stack values during assignment for recognizable values.
+        
+        Returns correct stack if successful. Raises TypeError otherwise.
+        """
+        if len(stack) != 2:
+            raise TypeError
+        stack[0] = int(stack[0])
+        if stack[0] < 1:
+            stack[0] = 1
+        elif stack[0] > 10:
+            stack[0] = 10
+        stack[1] = str(stack[1])
+        if stack[1] in self._operations:
+            return stack
+        else:
+            raise TypeError
+
+    def translate_settings(self, settings):
+        """Translates the string settings into module_stack list.
+           
+        Settings must be in the form: tier_operation_tier_operation_...
+        ex: 1_Add_3_Subtract_3_Subtract
+        This list will be further checked when it is assigned to self.module_stack.
+        """
+        try:
+            raw_list = settings.split("_")
+        except AttributeError:
+            raise ValueError
+        stack_list = []
+        if len(raw_list)%2 != 0:
+            raise ValueError
+        for x in range(0, len(raw_list)-1, 2):
+            stack_list.append([int(raw_list[x]), raw_list[x+1]])
+        return stack_list
+
+    def calculateUnitFitness(self, force, modules): #TODO: Write
+        if force.type_ == "Simple" or force.type_ == "Dynamic":
+            module_list = []
+            for item in modules:
+                if item.type_ == "Fitness":
+                    module_list.append(item)
+            self.adjust_module_stack(len(module_list))
+            response_stack = []
+            responded = False
+            variable, expected = force.conditions
+            for pos, item in enumerate(modules):
+                response = item.getResponse(variable)
+                if response is None:
+                    return None
+                else:
+                    response_stack.append([self._module_stack[pos][0], self._module_stack[pos][1], response])
+                responded = True
+        else:  # If it is an unrecognizable fitness force
+            return force.penalty
+        if responded:
+            current_teir = response_stack[:]
+            for teir in range(10, 0, -1):
+                next_teir = list()
+                current_solution = list()
+                insert_pos = None
+                for pos, response in enumerate(current_teir):
+                    if response[0] < teir:
+                        next_teir.append(response)
+                    else:
+                        if insert_pos is None:
+                            insert_pos = pos
+                        current_solution.append(str(response[2]))
+                        if response[1] == "Add" or response[1] == "+":
+                            current_solution.append("+")
+                        elif response[1] == "Subtract" or response[1] == "-":
+                            current_solution.append("-")
+                        elif response[1] == "Multiply" or response[1] == "*":
+                            current_solution.append("*")
+                        else:
+                            current_solution.append("/")
+                current_equation = "".join(current_solution[:-1])
+                if current_equation == "":
+                    continue
+                else:
+                    try:                
+                        solution = eval(current_equation)
+                    except (ValueError, ZeroDivisionError):
+                        return None
+                    next_teir.insert(insert_pos,[teir-1, current_solution[-1], solution])
+                current_teir = next_teir
+            final_solution = solution
+            return -abs(expected - final_solution)
+        else:  # If it has no modules capable of dealing with the recognized force
+            return force.penalty        
+
+    def mutate(self):
+        """Mutating teired fitness changes 1 or more module teir and/or operation.
+        
+        Number of modules that can be mutated in one pass is defined by plasticity attribute.
+        """
+        stack_order = [x for x in range(0, len(self._module_stack))]
+        random.shuffle(stack_order)
+        mutated_stacks = [x[:] for x in self.module_stack]
+        mutations = 0
+        # Randomly attempt to mutate teir and/or operation for each stack (in random order)
+        # If the number of mutated stacks has reached plasticity threshold, no more mutations
+        # are possible.
+        for position in stack_order:
+            if mutations == self._plasticity:
+                break
+            mutation_chances = [Mutations.HardMutation(1,100)]*2
+            mutated = False
+            if mutation_chances[0] < self._mutate_teir_chance:
+                mutated = True                
+                mutated_stacks[position][0] = Mutations.GaussianMutation(mutated_stacks[position][0], 1)
+            if mutation_chances[1] < self._mutate_operation_chance:
+                mutated = True
+                mutated_stacks[position][1] = random.choice(self._operations)
+            if mutated:
+                mutations += 1
+        self.module_stack = mutated_stacks
+        
+    def adjust_module_stack(self, target):
+        """Add or remove elements from the end of the module stack to equal # of modules in solver."""
+        if len(self.module_stack) == target:
+            return
+        elif len(self.module_stack) < target:
+            for x in range(0, (target-len(self.module_stack))):
+                self._module_stack.append([5, "Add"])
+        else:
+            for x in range(0, (len(self.module_stack) - target)):
+                self._module_stack.pop()
+           
+            
 class SolverInterface(object):
 
     def mutate(self):
@@ -230,7 +432,7 @@ class SmallSolver(SolverInterface):
     def __init__(self, name=None, conditions=None):
         # Static properties
         if name is None:
-            name = "Unnamed Linear Solver"
+            name = "Unnamed Solver"
         self._name = name
         self._type_ = "Small"
         self._fitness = 0
@@ -252,6 +454,7 @@ class SmallSolver(SolverInterface):
         self._unique = False
 
         # Determines the way modules are connected to calculate response
+#        self._fitness_calculator = LinearFitness()
         self._fitness_calculator = LinearFitness()
 
         # Mutatable properties
@@ -399,10 +602,18 @@ class SmallSolver(SolverInterface):
 
     @fitness_calculator.setter
     def fitness_calculator(self, value):
+        value = str(value)
         if value == "Linear":
             self._fitness_calculator = LinearFitness()
         elif value == "Dynamic":
             self._fitness_calculator = DynamicFitness()
+        elif value.startswith("Teired"):
+            value = value.split("_")
+            if len(value) == 1:
+                self._fitness_calculator = TeiredFitness()
+            else:
+                value = "_".join(value[1:])
+                self._fitness_calculator = TeiredFitness(value)
         else:
             badAttribute("fitness_calculator", value, self._name)
             return
@@ -471,7 +682,11 @@ class SmallSolver(SolverInterface):
 
         if chances[-1] <= self._merge_module_chance:
             self.mergeModules()
-
+        
+        # Currently, all solvers have a 100% chance of calling their fitness_calculator mutate
+        # Most fitness calculator mutates do nothing, those that did should have their own internal probabilities.
+        self._fitness_calculator.mutate()
+        
     def mutateProperty(self):
         """Mutate a single mutatable property"""
         selection = random.randint(1, 100)
@@ -575,6 +790,7 @@ class SmallSolver(SolverInterface):
         else:
             name = self._name
         desc += "%s, Age: %d, Children: %d" % (name, self._age, self._children)
+        desc += "\nFitness Calculator: "+self._fitness_calculator.type_
         if len(self._modules) == 0:
             desc += "\nNo modules."
         else:

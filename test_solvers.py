@@ -14,7 +14,7 @@ class TestSolverCreation:
 
     def test_create_small_solver_no_name(self):
         unnamed_solver = createSolver("Small")
-        assert unnamed_solver.name == "Unnamed Linear Solver"
+        assert unnamed_solver.name == "Unnamed Solver"
 
     def test_create_solver_with_name(self):
         named_solver = createSolver("Small", "TestSolver")
@@ -176,7 +176,7 @@ class TestBasicSolverFunctions:
     def test_get_description(self):
         test_description_solver = createSolver("Small", "Tester")
         description = test_description_solver.getDescription()
-        assert description == "------------------------------\nTester, Age: 0, Children: 0\nNo modules.\nFitness score: 0.00\n------------------------------"
+        assert description == "------------------------------\nTester, Age: 0, Children: 0\nFitness Calculator: Linear\nNo modules.\nFitness score: 0.00\n------------------------------"
 
     def test_export_solver(self):
         export_test_solver = createSolver("Small", "Tester")

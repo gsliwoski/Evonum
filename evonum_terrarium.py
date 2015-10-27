@@ -18,7 +18,7 @@ class Terrarium(object):
         self._max_solvers = 100
         self._max_forces = 5
         self._chance_to_survive_prune = 1
-        self._solver_conditions = {}
+        self._solver_settings = {}
         self._max_withheld = 100
 
     def addForce(self, force_type, force_subtype, conditions):
@@ -41,7 +41,7 @@ class Terrarium(object):
             "_" + str(self._current_day) + ".1"
         if solver_type == "Small":
             self._solvers.append(createSolver(
-                "Small", name, self._solver_conditions))
+                "Small", name, self._solver_settings))
         else:
             print("Error: unknown solver type %s. No solver added." % solver_type)
 
@@ -246,8 +246,8 @@ class Terrarium(object):
             self._max_solvers = int(m / x + b + .5)
             self.runDays(1)
 
-    def importSolverConditions(self, conditions):
-        self._solver_conditions.update(conditions)
+    def importSolverSettings(self, conditions):
+        self._solver_settings.update(conditions)
 
     def importSettings(self, settings):
         try:
