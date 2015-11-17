@@ -108,6 +108,7 @@ class GUI(tk.Frame):
         tk.Label(text_frame, text="Top Solver Details", font="Ariel 16").pack()
         self.solver_text = tk.Text(text_frame, height=11)
         self.solver_text.pack()
+        self.solver_text.insert(1.0, "Press Refresh to plot current top solver.\nPress Terminate to terminate simulation early.\nForce target is plotted in blue. Solver is plotted in red.")
         button_frame.pack(pady=10)
         logo_frame.pack(side=tk.LEFT)
         text_frame.pack(side=tk.LEFT)

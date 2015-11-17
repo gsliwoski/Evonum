@@ -3,6 +3,10 @@ Evolution simulator
 
 GUI Branch includes tkinter-based simple GUI for plotting progress. Including the line "Plot" in testscript.txt loads the plotting GUI.
 
+Refresh button plots top solver and displays details. Terminate ends simulation early and outputs top solver information.
+
+Blue plot = Force target. Red plot = top solver.
+
 To run example:
 python run_evonum.py testscript.txt
 
