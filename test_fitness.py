@@ -20,7 +20,13 @@ class TestFitnessForceCreation:
         assert equation_fitness.min_ == minimum
         assert equation_fitness.max_ == maximum
         assert equation_fitness._equation_string == equation
-
+    
+    def test_create_simple_one_to_one_fitness(self):
+        filename = "crc.txt"
+        onetoone_fitness = createFitnessForce("Simple", "OneToOne", filename)
+        assert onetoone_fitness.type_ == "Simple"
+        assert len(onetoone_fitness._expected) == 14
+    
     def test_create_dynamic_equation_fitess(self):
         equation = "tan(x) + 2*x"
         minimum = -5
@@ -49,7 +55,9 @@ class TestFitnessForceCreation:
         with pytest.raises(TypeError):
             dynamic_equation_badtype_conditions = createFitnessForce(
                 "Dynamic", "Equation", 100.5)
-
+        with pytest.raises(TypeError):
+            simple_onetoone_badtype_conditions = createFitnessForce(
+                "Simple", "OneToOne", 99.99)
 
 class TestBeginDay:
 
@@ -59,6 +67,16 @@ class TestBeginDay:
         position_force.beginDay()
         assert position_force._current_expected == position_force._expected[
             position_force._current_condition - 1]
+    
+    def test_onetoone_fitness_force(self):
+        random.seed(1)
+        onetoone_force = createFitnessForce(
+            "Simple", "OneToOne", "crc.txt")
+        onetoone_force.beginDay()
+        selected_condition = onetoone_force._current_condition
+        selected_expected = onetoone_force._current_expected
+        assert selected_condition == -9
+        assert selected_expected == 15
 
     def test_simple_equation_fitness_force(self):
         equation_force = createFitnessForce(

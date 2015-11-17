@@ -20,7 +20,16 @@ class Terrarium(object):
         self._chance_to_survive_prune = 1
         self._solver_settings = {}
         self._max_withheld = 100
+        self._top_solver = None
 
+    @property
+    def top_solver(self):
+        return self._top_solver
+    
+    @property
+    def forces(self):
+        return self._forces
+        
     def addForce(self, force_type, force_subtype, conditions):
         """Add new fitness force to terrarium with provided type, subtype, and conditions."""
         if len(self._forces) >= self._max_forces:
@@ -112,6 +121,7 @@ class Terrarium(object):
                 solver_scores.append([solver, solver.fitness, solver.age])
         if len(solver_scores) > 0:
             solver_scores.sort(key=lambda x: x[1], reverse=True)
+            self._top_solver = solver_scores[0][0]
         return solver_scores, withheld_solvers
 
     def writeDay(self, solver_scores, withheld_solvers):

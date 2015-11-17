@@ -1,9 +1,33 @@
 from evonum_terrarium import *
 import json
-
+import Tkinter as tk
+import threading
+import Queue
+import sys
+from evonum_gui import *
 # Takes script from command line and interprets with extremely limited
 # functionality.
 
+class threadRun(threading.Thread):
+    def __init__(self, threadID, evonum):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.evonum = evonum
+
+    def run(self):
+        self.evonum.run()
+
+class threadGUI(threading.Thread):
+    def __init__(self, threadID, gui, solver_queue, forces):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.gui = gui
+        self.solver_queue = solver_queue
+        self.forces = forces
+        
+    def run(self):
+        self.plot_frame = GUI(self.gui, self.solver_queue, self.forces)
+        self.gui.mainloop()
 
 class SimpleScripter(object):
     """Simple script file interpreter for setting up simulation and running."""
@@ -20,6 +44,7 @@ class SimpleScripter(object):
         self._refresh_rate = [0, 0]
         self._export = None
         self._solver_settings = {}
+        self._plot = False
 
         for line in script:
             line = line.strip()
@@ -163,10 +188,23 @@ class SimpleScripter(object):
                     self._export = ""
                 print("Solvers will be exported at run completion")
 
+            elif line.startswith("Plot"):
+                self._plot = True
+                self._tk = tk.Tk()
+                self._tk.title("EvoNum Progress Display")
+
     # Run the schedule defined by the scripter after loading forces and
     # solvers into world.
     def run(self):
         """Run the schedule defined by the scripter after loading world, forces, and solvers."""
+        best_solver_storage = Queue.Queue(maxsize=1)
+        if self._plot: #TODO: Improve and allow multiple forces
+#            self._plot = False
+#            thread_this_run = threadRun(1, self)
+            thread_gui = threadGUI(2, self._tk, best_solver_storage, self._worlds[0].forces)
+#            thread_this_run.start()
+            thread_gui.start()
+#            return
         print ("Running Schedule:")
         for item in self._actions:
             print (item)
@@ -185,6 +223,13 @@ class SimpleScripter(object):
                     for y in range(0, block_size):
                         for each_world in self._worlds:
                             each_world.runDays(1)
+                            try:
+                                best_solver_storage.put_nowait(each_world.top_solver.clone())
+                            except Queue.Full:
+                                if isinstance(best_solver_storage.get(), SmallSolver):
+                                    best_solver_storage.put(each_world.top_solver.clone())
+                                else:
+                                    self.terminate(True) #TODO: Add early termination command
                     if self._refresh_rate[1] > 0:
                         print ("Adding %d new solvers." %
                                self._refresh_rate[0])
@@ -194,12 +239,15 @@ class SimpleScripter(object):
                 for x in range(0, remainder):
                     for each_world in self._worlds:
                         each_world.runDays(1)
-
             elif item.startswith("End"):
                 for all_worlds in self._worlds:
                     all_worlds.endWorld(
                         int(item.split("_")[1]), int(item.split("_")[2]))
-
+        self.terminate(False)
+        
+    def terminate(self, early):
+        if early:
+            print("Early termination triggered!")
         for pos, world in enumerate(self._worlds):
             world.printSolvers()
             solvers = world.exportSolvers()
@@ -214,6 +262,9 @@ class SimpleScripter(object):
                     outfile.close()
                 else:
                     print("No solvers to export from world%d" % (pos + 1))
+        
+        if early:
+            sys.exit()        
 
     def parseSolverSettings(self, settings):
         parsed_settings = {}

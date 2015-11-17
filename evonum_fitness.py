@@ -24,6 +24,8 @@ def createFitnessForce(force_type, force_subtype, conditions):
             new_force = SimplePosition("SimplePositionFitnessForce")
         elif force_subtype == "Equation":
             new_force = SimpleEquation("SimpleEquationFitnessForce")
+        elif force_subtype == "OneToOne":
+            new_force = SimpleOneToOne("SimpleOneToOneFitnessForce")
         else:
             print ("Unknown Simple subtype")
             return None
@@ -90,10 +92,8 @@ class FitnessInterface(object):
         Fitness force conditions fail when randomly selected value has an undefined solution.
         """
         return self._flexibility
-
+      
 # Concrete Fitness Forces
-
-
 class SimplePosition(FitnessInterface):
     """Randomly selects position and expects value at given position
 
@@ -102,7 +102,7 @@ class SimplePosition(FitnessInterface):
 
     Penalty = -99999999999
 
-    LoadConditions takes a string filename containing ordered list of 
+    loadConditions takes a string filename containing ordered list of 
                    expected values
 
     If no conditions are loaded, fitness force will always select 0 and expect 0.
@@ -127,8 +127,8 @@ class SimplePosition(FitnessInterface):
     def _setConditions(self):
         """Randomly selects position and sets expected as value at that position."""
         self._current_condition = random.randint(self._min_, self._max_)
-        self._current_expected = self._expected[self._current_condition - 1]
-
+        self._current_expected = self.expects(self._current_condition)
+    
     def beginDay(self):
         """Increments age by 1 and sets day's conditions"""
         self._age += 1
@@ -151,9 +151,89 @@ class SimplePosition(FitnessInterface):
             raise ValueError(
                 "Error: ordered list loaded for Position Force is empty!")
 
+    def expects(self, variable):
+        """Returns the expected response given the supplied variable."""
+        variable = int(variable)
+        if variable < self._min_ or variable > self._max_:
+            return None
+        else:
+            return self._expected[variable - 1]
+                
+class SimpleOneToOne(FitnessInterface):
+    """Selects value from column A and expects corresponding value from B
+    
+    Randomly selects position and expects value at given position
 
-# Equation fitness force randomly generates variable and calculates expected
-# based on a provided equation.
+    Type = Simple
+    Initialize with optional string name
+
+    Penalty = -99999999999
+
+    loadConditions takes a string filename containing 2-column table of variable
+    and corresponding expected values.
+
+    If no conditions are loaded, fitness force will always select 0 and expect 0.
+    """
+
+    def __init__(self, name="Unnamed Simple OneToOne Fitness Force"):
+        self._name = str(name)
+        self._condition = [0]
+        self._expected = [0]
+        self._current_expected = 0
+        self._age = 0
+        self._current_condition = 0
+        self._max_ = len(self._expected)
+        self._min_ = 0
+        self._type_ = "Simple"
+        self._penalty = -99999999999
+        self._flexibility = 1
+
+    def getDescription(self):
+        return "%s Fitness. Name: %s Age: %d, Current Condition: %d, Current Desire: %d" % (self._type_, self._name, self._age, self._current_condition, self._current_expected)
+
+    # Randomly select a variable and get the expected value at that position
+    def _setConditions(self):
+        """Randomly selects value from column A and sets expected as value at row in col B."""
+        position = random.randrange(self._min_, self._max_)
+        self._current_condition = self._condition[position]
+        self._current_expected = self._expected[position]
+
+    def beginDay(self):
+        """Increments age by 1 and sets day's conditions"""
+        self._age += 1
+        self._setConditions()
+
+    # Conditions are loaded for this fitness force as an ordered list of
+    # values from a file.
+    def loadConditions(self, filename):
+        """Load 2-columned values from provided filename.
+        
+        Each row is individual line and any line with only one value is ignored.
+        """
+        try:
+            raw = open(filename).readlines()
+        except TypeError:
+            raise TypeError(
+                "Error: conditions must be string filename.")
+        self._expected = []
+        self._condition = []
+        for line in raw:
+            line = line.split()
+            if len(line)< 2:
+                continue
+            try:
+                condition = float(line[0])
+                expected = float(line[1])
+            except ValueError:
+                raise TypeError(
+                    "Error: all values from file %s must be castable to float!" % filename)
+            self._expected.append(expected)
+            self._condition.append(condition)
+        self._max_ = len(self._expected)
+        if self._max_ == 0:
+            raise ValueError(
+                "Error: ordered list loaded for Position Force is empty!")
+
 class SimpleEquation(FitnessInterface):
     """Randomly selects variable (between min and max) and expects value determined with equation
 
@@ -162,7 +242,7 @@ class SimpleEquation(FitnessInterface):
 
     Penalty = -99999999999
 
-    LoadConditions takes a string pythonic equation, minimum random value, maximum random value
+    loadConditions takes a string pythonic equation, minimum random value, maximum random value
 
     If equation solution is undefined for selected value, force will reattempt 100 times before
     run fails.
@@ -274,9 +354,16 @@ class SimpleEquation(FitnessInterface):
             self.max_ = maximum
             self.min_ = min(float(conditions[-2]), float(conditions[-1]))
 
+    def expects(self, variable):
+        variable = float(variable)
+        self._permitted['x'] = variable
+        try:
+            response = eval(self._equation_string, {"__builtins__": None}, self._permitted)
+            return response
+        except (ValueError, ZeroDivisionError):
+            return None
+        
 # TODO: Needs further testing and improvements
-
-
 class DynamicEquation(FitnessInterface):
     """Randomly selects variable (between min and max) and expects value determined with equation
 
@@ -285,7 +372,7 @@ class DynamicEquation(FitnessInterface):
 
     Penalty = -99999999999
 
-    LoadConditions takes a string pythonic equation, minimum random value, maximum random value
+    loadConditions takes a string pythonic equation, minimum random value, maximum random value
     """
 
     def __init__(self, name="Unnamed Dynamic Equation Fitness Force"):

@@ -89,24 +89,29 @@ class LinearFitness(FitnessCalculator):
 
     def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
-            running_total = 0
-            responded = False
+            self._responded = False
             variable, expected = force.conditions
-            for item in modules:
-                response = item.getResponse(variable)
-                if response is None:
-                    return None
-                else:
-                    running_total += response
-                responded = True
+            response = self.getSimpleResponse(variable, modules)
+            if response is None:
+                return None
         else:  # If it is an unrecognizable fitness force
             return force.penalty
-
-        if responded:
-            return -abs(expected - running_total)
+        if self._responded:
+            return -abs(expected - response)
         else:  # If it has no modules capable of dealing with the recognized force
             return force.penalty
-
+    
+    def getSimpleResponse(self, variable, modules):
+        variable = float(variable)
+        running_total = 0
+        for item in modules:
+            response = item.getResponse(variable)
+            if response is None:
+                return None
+            else:
+                running_total += response
+            self._responded = True
+        return running_total           
 
 class DynamicFitness(FitnessCalculator):
     """Randomly select modules to calculate fitness and sum responses."""
@@ -116,28 +121,34 @@ class DynamicFitness(FitnessCalculator):
 
     def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
-            running_total = 0
-            responded = False
+            self._responded = False
             variable, expected = force.conditions
-            # Randomly determine the number of modules used between 1/2 total
-            # modules to 1.5 * total modules (at least 1 module)
-            num_modules_used = random.randint(
-                max(1, int(len(modules) / 2)), int(1.5 * len(modules) + .5))
-            for x in range(0, num_modules_used):
-                response = random.choice(modules).getResponse(variable)
-                if response is None:
-                    return None
-                else:
-                    running_total += response
-                responded = True
+            response = self.getSimpleResponse(variable, modules)
+            if response is None:
+                return None
         else:  # If it is an unrecognizable fitness force
             return force.penalty
-
-        if responded:
-            return -abs(expected - running_total)
-        if not responded:  # If it has no modules capable of dealing with the recognized force
+        if self._responded:
+            return -abs(expected - response)
+        else:  # If it has no modules capable of dealing with the recognized force
             return force.penalty
-
+    
+    def getSimpleResponse(self, variable, modules):
+        variable = float(variable)
+        running_total = 0
+        # Randomly determine the number of modules used between 1/2 total
+        # modules to 1.5 * total modules (at least 1 module)
+        num_modules_used = random.randint(
+            max(1, int(len(modules) / 2)), int(1.5 * len(modules) + .5))
+        for x in range(0, num_modules_used):
+            response = random.choice(modules).getResponse(variable)
+            if response is None:
+                return None
+            else:
+                running_total += response
+                self._responded = True
+        return running_total
+        
 class TeiredFitness(FitnessCalculator):
     """Modules are teired with variable operations allowing for complex combinations.
     
@@ -241,26 +252,34 @@ class TeiredFitness(FitnessCalculator):
             stack_list.append([int(raw_list[x]), raw_list[x+1]])
         return stack_list
 
-    def calculateUnitFitness(self, force, modules): #TODO: Write
+    def calculateUnitFitness(self, force, modules):
         if force.type_ == "Simple" or force.type_ == "Dynamic":
             module_list = []
             for item in modules:
                 if item.type_ == "Fitness":
                     module_list.append(item)
             self.adjust_module_stack(len(module_list))
-            response_stack = []
-            responded = False
+            #response_stack = []
+            self._responded = False
             variable, expected = force.conditions
-            for pos, item in enumerate(modules):
-                response = item.getResponse(variable)
-                if response is None:
-                    return None
-                else:
-                    response_stack.append([self._module_stack[pos][0], self._module_stack[pos][1], response])
-                responded = True
-        else:  # If it is an unrecognizable fitness force
-            return force.penalty
-        if responded:
+            final_solution = self.getSimpleResponse(variable, modules)
+        if final_solution is None:
+            return None
+        if self._responded:
+            return -abs(expected - final_solution)
+        else:  # If it has no modules capable of dealing with the recognized force
+            return force.penalty        
+
+    def getSimpleResponse(self, variable, modules):
+        response_stack = []
+        for pos, item in enumerate(modules):
+            response = item.getResponse(variable)
+            if response is None:
+                return None
+            else:
+                response_stack.append([self._module_stack[pos][0], self._module_stack[pos][1], response])
+            self._responded = True
+        if self._responded:
             current_teir = response_stack[:]
             for teir in range(10, 0, -1):
                 next_teir = list()
@@ -291,11 +310,9 @@ class TeiredFitness(FitnessCalculator):
                         return None
                     next_teir.insert(insert_pos,[teir-1, current_solution[-1], solution])
                 current_teir = next_teir
-            final_solution = solution
-            return -abs(expected - final_solution)
-        else:  # If it has no modules capable of dealing with the recognized force
-            return force.penalty        
-
+            final_solution = solution        
+        return final_solution
+        
     def mutate(self):
         """Mutating teired fitness changes 1 or more module teir and/or operation.
         
@@ -760,6 +777,11 @@ class SmallSolver(SolverInterface):
                 self.death()
             elif self._resilience > 0:
                 self._resilience -= 1
+
+    def getSimpleResponse(self, variable):
+        """Return a single response to a single variable."""
+        response = self._fitness_calculator.getSimpleResponse(variable, self._modules)
+        return response
 
     def death(self):
         """Flags solver for death at start of next day"""

@@ -8,20 +8,22 @@ World: 100, 5, 1
             # Equation condition is equation that must be in pythonic form and must be followed with min and max for random variable
             # Position condition is a filename with the ordered list of values.
 
-#Force: 1, Simple, Equation, 5.3*pow(x,2)+log(x,e), 1, 100           
-#Force: 1, Simple, Equation, tan(x), -1.5, 1.5                       
-Force: 1, Simple, Position, primes_1000.txt
-#Force: 1, Simple, Identity, 1,500                                    
-#Force: 1, Simple, Equation, sin(x)+53.4*pow(cos(x),4)-15*pow(cos(x),2)+log10(x), 1, 1000
+#Force: 1, Dynamic, Equation, 5.3*pow(x,2)+log(x,e), 1, 100
+#Force: 3, Simple, OneToOne, crc2.txt                      
+#Force: 1, Simple, Equation, tan(x), -1.57, 1.57
+Force: 1, Simple, Equation, tan(x), -10, 10                                              
+#Force: 1, Simple, Position, primes_1000.txt
+#Force: 3, Simple, Equation, sin(x)+53.4*pow(cos(x),4)-15*pow(cos(x),2)+log10(x), 1, 1000
 
             # Number of new solvers to start with, optional settings all solvers are born with separated by commas
 
 Solver: 100, fitness_calculator = Teired, merge_module_chance = 0, unique = False
 #Solver: 100, fitness_calculator = Linear
+#Solver: 100, fitness_calculator = Dynamic
 
             # Import solvers from file in JSON array format.
 
-Import: world1_solvers.json                                          
+#Import: world1_solvers.json                                          
 
             # Add random solvers at regular intervals: # of solvers to add, # of days between addition
 
@@ -29,12 +31,13 @@ Refresh Solvers: 50, 10
 
             # Run for specified number of days
 
-Run: 10000 									                         
+Run: 100000 									                         
 
             # Use end of the world rampdown: number of days to ramp down max population, max population at end of rampdown.
 
-End: 1000, 10 									                     
+#End: 1000, 10 									                     
 
             # Sets export to true so all living solvers are exported into json array file with specified prefix at end of run. Prefix is optional
 
-Export: test_result_
+#Export: test_result_
+Plot

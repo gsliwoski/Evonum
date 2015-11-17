@@ -10,8 +10,7 @@ def error():
     raise NotImplementedError("%s not implemented" %
                               inspect.stack()[1][3])  # Used for interface
 
-# MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4",
-# "Power_5"] #TODO: store potential subtypes elsewhere and make dynamic
+#MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5"] #TODO: store potential subtypes elsewhere and make dynamic
 MODULE_SUBTYPES = ["Power_1", "Power_2", "Power_3", "Power_4", "Power_5", "Log", "Ln", "Sine_1", "Sine_2",
                    "Sine_3", "Sine_4", "Sine_5", "Cosine_1", "Cosine_2", "Cosine_3", "Cosine_4", "Cosine_5"]
 #MODULE_SUBTYPES = ["Log"]
