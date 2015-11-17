@@ -8,15 +8,6 @@ from evonum_gui import *
 # Takes script from command line and interprets with extremely limited
 # functionality.
 
-class threadRun(threading.Thread):
-    def __init__(self, threadID, evonum):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.evonum = evonum
-
-    def run(self):
-        self.evonum.run()
-
 class threadGUI(threading.Thread):
     def __init__(self, threadID, gui, solver_queue, forces):
         threading.Thread.__init__(self)
