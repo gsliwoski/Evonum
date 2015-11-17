@@ -1,5 +1,6 @@
 # Evonum
 Evolution simulator
+GUI Branch includes tkinter-based simple GUI for plotting progress. Including the line "Plot" in testscript.txt loads the plotting GUI.
 
 To run example:
 python run_evonum.py testscript.txt
